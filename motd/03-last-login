@@ -1,5 +1,17 @@
 #!/bin/bash
-
 source /etc/update-motd.d/colors.txt
 
-echo -e " ${TITLE_COLOR}Last login..........:${NC} ${TEXT_COLOR}$(last | head -1 | cut -c 1-9 | xargs)${NC} at ${TEXT_COLOR}$(last | head -1 | cut -c 40-55 | xargs)${NC} from ${TEXT_COLOR}$(last | head -1 | cut -c 23-39 | xargs)${NC}"
+LAST_LOGIN=$(lastlog2 2>/dev/null | awk 'NR>1' | tail -n 1)
+
+if [ -n "$LAST_LOGIN" ]; then
+    # Extract the user, host, and date fields
+    USER=$(echo "$LAST_LOGIN" | awk '{print $1}')
+    HOST=$(echo "$LAST_LOGIN" | awk '{print $3}')
+    DATESTR=$(echo "$LAST_LOGIN" | awk '{print $4" "$5" "$6" "$7" "$8" "$9}')
+
+    FORMATTED_TIME=$(date -d "$DATESTR" +"%H:%M:%S %m/%d/%Y" 2>/dev/null)
+
+    echo -e " ${TITLE_COLOR}Last login..........:${NC} ${TEXT_COLOR}${USER}@${HOST}${NC} at ${TEXT_COLOR}${FORMATTED_TIME}${NC}"
+else
+    echo -e " ${TITLE_COLOR}Last login..........:${NC} ${TEXT_COLOR}No previous login found${NC}"
+fi

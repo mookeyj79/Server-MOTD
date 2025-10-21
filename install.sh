@@ -19,7 +19,7 @@ warn() {
 # Start
 log "Installing required packages..."
 sudo apt update
-sudo apt install -y python3 python3-pip python3-requests lsb-release figlet jq toilet boxes lolcat
+sudo apt install -y python3 python3-pip python3-requests lsb-release figlet jq toilet boxes lolcat lastlog2
 
 # Determine Linux Distro
 UNAME=$(uname | tr '[:upper:]' '[:lower:]')

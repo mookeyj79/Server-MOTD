@@ -1,6 +1,46 @@
 #!/bin/bash
 
-echo
-/usr/lib/update-notifier/update-motd-reboot-required
-/usr/lib/update-notifier/apt-check --human-readable
-echo
+have() { command -v "$1" >/dev/null 2>&1; }
+
+print_reboot_required() {
+  local msg=false
+  if [ -f /run/reboot-required ] || [ -f /var/run/reboot-required ]; then
+    msg=true
+  elif have needrestart; then
+    local ksta
+    ksta=$(needrestart -b -r l 2>/dev/null | awk -F': ' '/NEEDRESTART-KSTA/{print $2; exit}')
+    if [ -n "$ksta" ] && [ "$ksta" -ge 3 ] 2>/dev/null; then
+      msg=true
+    fi
+  fi
+  if [ "$msg" = true ]; then
+    echo "*** Reboot required ***"
+  fi
+}
+
+print_upgrades() {
+  if [ -x /usr/lib/update-notifier/apt-check ]; then
+    /usr/lib/update-notifier/apt-check --human-readable
+    return
+  fi
+  local list count sec_count
+  list=$(apt list --upgradable 2>/dev/null | tail -n +2)
+  count=$(printf "%s\n" "$list" | sed '/^\s*$/d' | wc -l)
+  sec_count=$(apt-get -s upgrade 2>/dev/null | grep -E "^Inst " | grep -i "\[security\]" | wc -l)
+  if [ "$count" -gt 0 ] 2>/dev/null; then
+    echo "$count packages can be updated."
+    if [ "$sec_count" -gt 0 ] 2>/dev/null; then
+      echo "$sec_count updates are security updates."
+    fi
+  fi
+}
+
+out_reboot="$(print_reboot_required)"
+out_upgrades="$(print_upgrades)"
+
+if [ -n "$out_reboot$out_upgrades" ]; then
+  echo
+  [ -n "$out_upgrades" ] && printf '%s\n' "$out_upgrades"
+  [ -n "$out_reboot" ] && printf '%s\n' "$out_reboot"
+  echo
+fi
