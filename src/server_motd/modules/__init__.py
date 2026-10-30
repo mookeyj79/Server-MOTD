@@ -18,12 +18,14 @@ from collections.abc import Callable
 from server_motd.config import ModuleSpec
 from server_motd.model import Module
 from server_motd.modules import (
+    cpu,
     disks,
     ips,
     load,
     logins,
     memory,
     processes,
+    sabnzbd,
     servarr,
     tautulli,
     updates,
@@ -31,6 +33,7 @@ from server_motd.modules import (
 )
 
 REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
+    "cpu": cpu.Cpu,
     "disks": disks.Disks,
     "ips": ips.Ips,
     "lidarr": servarr.Lidarr,
@@ -39,6 +42,7 @@ REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "memory": memory.Memory,
     "processes": processes.Processes,
     "radarr": servarr.Radarr,
+    "sabnzbd": sabnzbd.Sabnzbd,
     "sonarr": servarr.Sonarr,
     "tautulli": tautulli.Tautulli,
     "updates": updates.Updates,

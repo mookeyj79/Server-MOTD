@@ -46,7 +46,8 @@ class FakeServer:
     def __init__(self, auth: tuple[str, str] | None = None) -> None:
         self.auth = auth
         self.requests: list[Request] = []
-        self._routes: dict[str, list[tuple[dict[str, str], int, bytes]]] = {}
+        self._routes: dict[str, tuple[int, bytes]] = {}
+        self._query_routes: list[tuple[str, dict[str, str], int, bytes]] = []
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -71,23 +72,20 @@ class FakeServer:
         json: Any = None,
         status: int = 200,
         query: dict[str, str] | None = None,
-        raw: bytes | None = None,
     ) -> None:
         """Serve a fixture file (relative to tests/fixtures) or inline JSON.
 
-        `query` restricts the route to requests carrying those query items
-        (for APIs that multiplex on `?cmd=`); `raw` serves literal bytes.
+        With `query`, the route only matches requests carrying those query
+        params (checked before plain path routes).
         """
-        if raw is not None:
-            body = raw
-        elif fixture is not None:
+        if fixture is not None:
             body = (FIXTURES / fixture).read_bytes()
         else:
             body = _dumps(json)
-        routes = self._routes.setdefault(path, [])
-        routes[:] = [r for r in routes if r[0] != (query or {})]
-        routes.append((query or {}, status, body))
-        routes.sort(key=lambda r: -len(r[0]))  # most specific first
+        if query:
+            self._query_routes.append((path, query, status, body))
+        else:
+            self._routes[path] = (status, body)
 
     def start(self) -> None:
         self._thread.start()
@@ -96,6 +94,12 @@ class FakeServer:
         self._httpd.shutdown()
         self._httpd.server_close()
 
+    def _lookup(self, path: str, query: dict[str, str]) -> tuple[int, bytes]:
+        for p, want, status, body in self._query_routes:
+            if p == path and want.items() <= query.items():
+                return status, body
+        return self._routes.get(path, (404, b'{"error": "not found"}'))
+
     def _handle(self, h: BaseHTTPRequestHandler) -> None:
         parts = urlsplit(h.path)
         headers = {k.lower(): v for k, v in h.headers.items()}
@@ -103,15 +107,7 @@ class FakeServer:
         if self.auth and headers.get(self.auth[0].lower()) != self.auth[1]:
             status, body = 401, b'{"error": "Unauthorized"}'
         else:
-            query = dict(parse_qsl(parts.query))
-            status, body = next(
-                (
-                    (s, b)
-                    for q, s, b in self._routes.get(parts.path, [])
-                    if q.items() <= query.items()
-                ),
-                (404, b'{"error": "not found"}'),
-            )
+            status, body = self._lookup(parts.path, dict(parse_qsl(parts.query)))
         h.send_response(status)
         h.send_header("Content-Type", "application/json")
         h.send_header("Content-Length", str(len(body)))
