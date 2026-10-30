@@ -1,0 +1,13 @@
+{"rid": 1, "full_update": true,
+ "server_state": {"dl_info_speed": 2097152, "up_info_speed": 524288, "dl_info_data": 123456789, "up_info_data": 98765432, "alltime_dl": 5000000000000, "alltime_ul": 7000000000000, "connection_status": "connected"},
+ "torrents": {
+  "a1": {"name": "debian", "state": "downloading"},
+  "a2": {"name": "ubuntu", "state": "stalledDL"},
+  "a3": {"name": "arch", "state": "uploading"},
+  "a4": {"name": "fedora", "state": "stalledUP"},
+  "a5": {"name": "mint", "state": "forcedUP"},
+  "a6": {"name": "gentoo", "state": "pausedUP"},
+  "a7": {"name": "nix", "state": "pausedDL"},
+  "a8": {"name": "bsd", "state": "missingFiles"},
+  "a9": {"name": "alpine", "state": "moving"}
+ }}

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# exit if not enabled in config
-if [ "$(cat /opt/motd/config.json | jq '.motd.show.autoscan' --raw-output)" == "false" ]; then exit 0; fi
-
-source /etc/update-motd.d/colors.txt
-
-echo -e " ${TITLE_COLOR}Plex Autoscan.......:${NC} Queued Scans: ${TEXT_COLOR}$(python3 /opt/motd/media-server-motd.py autoscan get_queue_count)${NC}"
-

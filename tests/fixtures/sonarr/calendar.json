@@ -1,0 +1,1 @@
+[{"id": 201, "seriesId": 7, "seasonNumber": 2, "episodeNumber": 5, "title": "Second", "airDateUtc": "2026-10-30T01:00:00Z", "monitored": true, "series": {"title": "Example Show"}}, {"id": 202, "seriesId": 8, "seasonNumber": 1, "episodeNumber": 1, "title": "First", "airDateUtc": "2026-11-01T01:00:00Z", "monitored": true, "series": {"title": "Another Show"}}]

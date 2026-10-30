@@ -1,0 +1,108 @@
+---
+- name: Install system packages
+  ansible.builtin.apt:
+    name: "{{ server_motd_apt_packages }}"
+    state: present
+    cache_valid_time: 3600
+
+- name: Create the service group
+  ansible.builtin.group:
+    name: "{{ server_motd_user }}"
+    system: true
+
+- name: Create the service user
+  ansible.builtin.user:
+    name: "{{ server_motd_user }}"
+    group: "{{ server_motd_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    home: /nonexistent
+
+- name: Create the root-owned install directory
+  ansible.builtin.file:
+    path: "{{ server_motd_base_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check whether the hook directory exists
+  ansible.builtin.stat:
+    path: "{{ server_motd_hook_dir }}"
+  register: server_motd_hook_dir_stat
+
+- name: Create the hook directory if the distro does not ship it
+  ansible.builtin.file:
+    path: "{{ server_motd_hook_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: not server_motd_hook_dir_stat.stat.exists
+
+- name: Remember that the role created the hook directory
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ server_motd_base_dir }}/created-hook-dir"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not server_motd_hook_dir_stat.stat.exists
+
+- name: Check the lockfile pins server-motd
+  ansible.builtin.assert:
+    that: lookup('ansible.builtin.file', server_motd_lockfile) is search('(?m)^server-motd==')
+    fail_msg: >-
+      {{ server_motd_lockfile }} has no hash-pinned server-motd entry (the release
+      workflow generates it); set server_motd_package_src to a wheel instead.
+  when: server_motd_package_src | length == 0
+
+- name: Install the lockfile
+  ansible.builtin.copy:
+    src: "{{ server_motd_lockfile }}"
+    dest: "{{ server_motd_base_dir }}/requirements.lock"
+    owner: root
+    group: root
+    mode: "0644"
+  when: server_motd_package_src | length == 0
+
+- name: Install server-motd into the root-owned venv from the lockfile
+  ansible.builtin.pip:
+    requirements: "{{ server_motd_base_dir }}/requirements.lock"
+    extra_args: --require-hashes
+    virtualenv: "{{ server_motd_venv }}"
+    virtualenv_command: python3 -m venv
+  when: server_motd_package_src | length == 0
+
+- name: Install server-motd into the root-owned venv from a wheel
+  ansible.builtin.pip:
+    name: "{{ server_motd_package_src }}"
+    virtualenv: "{{ server_motd_venv }}"
+    virtualenv_command: python3 -m venv
+  when: server_motd_package_src | length > 0
+
+- name: Create the config directory
+  ansible.builtin.file:
+    path: "{{ server_motd_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render config.toml
+  ansible.builtin.copy:
+    content: "{{ server_motd_config | server_motd_toml }}"
+    dest: "{{ server_motd_config_dir }}/config.toml"
+    owner: "{{ server_motd_user }}"
+    group: "{{ server_motd_user }}"
+    mode: "0600"
+  no_log: true
+
+- name: Install the login hook
+  ansible.builtin.copy:
+    src: 50-server-motd
+    dest: "{{ server_motd_hook_dir }}/{{ server_motd_hook_name }}"
+    owner: root
+    group: root
+    mode: "0755"

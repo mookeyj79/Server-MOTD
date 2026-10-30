@@ -1,0 +1,1 @@
+{"response": {"result": "success", "message": null, "data": {"lan_bandwidth": 25318, "sessions": [], "stream_count": "3", "stream_count_direct_play": 1, "stream_count_direct_stream": 1, "stream_count_transcode": 1, "total_bandwidth": 31518, "wan_bandwidth": 6200}}}

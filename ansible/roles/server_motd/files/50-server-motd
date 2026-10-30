@@ -1,0 +1,25 @@
+#!/bin/sh
+# Managed by the server_motd Ansible role. Runs as root from pam_motd with an
+# empty environment. Must always exit 0: a non-zero exit would discard the whole
+# MOTD refresh (see docs/research/debian-motd-mechanics.md).
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+VENV=/opt/server-motd/venv
+BIN="$VENV/bin/server-motd"
+RUN_USER=server-motd
+
+[ -x "$BIN" ] || exit 0
+
+if [ "$(id -u)" = 0 ]; then
+    id "$RUN_USER" >/dev/null 2>&1 || exit 0
+    set -- runuser -u "$RUN_USER" -- env -i PATH="$PATH" LANG=C.UTF-8 HOME=/nonexistent \
+        "$BIN" --width 80 --color always
+else
+    set -- env -i PATH="$PATH" LANG=C.UTF-8 "$BIN" --width 80 --color always
+fi
+
+# Capture first so a failure or timeout never leaves partial output behind.
+out=$(timeout 20 "$@" 2>/dev/null) || exit 0
+[ -n "$out" ] && printf '%s\n' "$out"
+exit 0

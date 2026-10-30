@@ -1,0 +1,24 @@
+┌────────────────────────────────────────────────┐
+│ media-box                                      │
+├────────────────────────────────────────────────┤
+│ Alpha                                          │
+│ Info  plain                                    │
+│ Fine  all good                                 │
+│ Hmm   getting full                             │
+│ Bad   on fire                                  │
+│ Long  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx… │
+│                                                │
+│ Beta                                           │
+│ Info  plain                                    │
+│ Fine  all good                                 │
+│ Hmm   getting full                             │
+│ Bad   on fire                                  │
+│ Long  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx… │
+│                                                │
+│ Gamma                                          │
+│ Info  plain                                    │
+│ Fine  all good                                 │
+│ Hmm   getting full                             │
+│ Bad   on fire                                  │
+│ Long  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx… │
+└────────────────────────────────────────────────┘
