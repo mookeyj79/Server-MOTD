@@ -17,6 +17,7 @@ RunCli = Callable[..., Run]
 WriteConfig = Callable[[str], Path]
 Golden = Callable[[str, str], None]
 
+HEAD = 'title = "host"\n'
 GIB = 1024**3
 Addr = namedtuple("Addr", "family address netmask broadcast ptp")  # noqa: PYI024
 Mem = namedtuple("Mem", "total used percent")  # noqa: PYI024
@@ -27,7 +28,7 @@ User = namedtuple("User", "name terminal host started pid")  # noqa: PYI024
 
 def render(run_cli: RunCli, write_config: WriteConfig, toml: str) -> Run:
     r = run_cli(
-        "--config", str(write_config(toml)), "--width", "50", "--color", "never"
+        "--config", str(write_config(HEAD + toml)), "--width", "50", "--color", "never"
     )
     assert r.code == 0
     return r
@@ -69,10 +70,10 @@ def test_load_golden_and_thresholds(
         ("warn = 0.4", "\x1b[33m"),
         ("warn = 0.4\ncrit = 0.5", "\x1b[31m"),
     ]:
-        cfg = write_config(f'[[modules]]\nkind = "load"\n{limits}\n')
+        cfg = write_config(HEAD + f'[[modules]]\nkind = "load"\n{limits}\n')
         c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
         assert mark in c.out
-    cfg = write_config('[[modules]]\nkind = "load"\nwarn = 0.9\n')
+    cfg = write_config(HEAD + '[[modules]]\nkind = "load"\nwarn = 0.9\n')
     c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
     assert "\x1b[32m" in c.out
 
@@ -88,7 +89,7 @@ def test_memory_golden_and_thresholds(
     monkeypatch.setattr(psutil, "swap_memory", lambda: swap(2 * GIB, 0, 0.0))
     r = render(run_cli, write_config, '[[modules]]\nkind = "memory"\n')
     assert_golden("memory.txt", r.out)
-    cfg = write_config('[[modules]]\nkind = "memory"\nwarn = 20\ncrit = 90\n')
+    cfg = write_config(HEAD + '[[modules]]\nkind = "memory"\nwarn = 20\ncrit = 90\n')
     c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
     assert "\x1b[33m2.0G / 8.0G (25%)" in c.out
 
@@ -118,7 +119,7 @@ def test_disks_lists_mounts_golden_and_thresholds(
     monkeypatch.setattr(psutil, "disk_usage", disk_usage)
     r = render(run_cli, write_config, '[[modules]]\nkind = "disks"\n')
     assert_golden("disks.txt", r.out)
-    cfg = write_config('[[modules]]\nkind = "disks"\nwarn = 80\ncrit = 95\n')
+    cfg = write_config(HEAD + '[[modules]]\nkind = "disks"\nwarn = 80\ncrit = 95\n')
     c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
     assert "\x1b[32m40.0G / 100.0G (40%)" in c.out
     assert "\x1b[33m950.0G / 1.0T (93%)" in c.out
@@ -151,7 +152,9 @@ def test_processes_golden_and_thresholds(
     monkeypatch.setattr(psutil, "pids", lambda: list(range(150)))
     r = render(run_cli, write_config, '[[modules]]\nkind = "processes"\n')
     assert_golden("processes.txt", r.out)
-    cfg = write_config('[[modules]]\nkind = "processes"\nwarn = 100\ncrit = 120\n')
+    cfg = write_config(
+        HEAD + '[[modules]]\nkind = "processes"\nwarn = 100\ncrit = 120\n'
+    )
     c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
     assert "\x1b[31m150" in c.out
 
@@ -161,10 +164,10 @@ def test_bad_thresholds_degrade_only_that_module(
 ) -> None:
     monkeypatch.setattr(psutil, "pids", lambda: [1])
     cfg = write_config(
-        '[[modules]]\nkind = "processes"\nname = "A"\nwarn = 9\ncrit = 5\n'
+        HEAD + '[[modules]]\nkind = "processes"\nname = "A"\nwarn = 9\ncrit = 5\n'
         '[[modules]]\nkind = "processes"\nname = "B"\n'
     )
-    r = run_cli("--config", str(cfg), "--width", "100", "--color", "never")
+    r = run_cli("--config", str(cfg), "--width", "200", "--color", "never")
     assert "'warn' must not exceed 'crit'" in r.out
     assert "Processes  1" in r.out
 
@@ -172,9 +175,9 @@ def test_bad_thresholds_degrade_only_that_module(
 def test_no_last_login_module(run_cli: RunCli, write_config: WriteConfig) -> None:
     r = run_cli(
         "--config",
-        str(write_config('[[modules]]\nkind = "lastlogin"\n')),
+        str(write_config(HEAD + '[[modules]]\nkind = "lastlogin"\n')),
         "--width",
-        "100",
+        "200",
         "--color",
         "never",
     )

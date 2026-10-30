@@ -13,6 +13,7 @@ WriteConfig = Callable[[str], Path]
 Golden = Callable[[str, str], None]
 MakeServer = Callable[..., FakeServer]
 
+HEAD = 'title = "host"\n'
 KEY = "s3cret"
 
 
@@ -47,7 +48,7 @@ def test_sonarr_golden(
     assert_golden: Golden,
 ) -> None:
     srv = servarr(fake_server, "sonarr", health="health_warn.json")
-    cfg = write_config(cfg_for("sonarr", srv.url))
+    cfg = write_config(HEAD + cfg_for("sonarr", srv.url))
     r = run_cli("--config", str(cfg), "--width", "60", "--color", "never")
     assert r.code == 0
     assert_golden("sonarr.txt", r.out)
@@ -72,7 +73,7 @@ def test_two_sonarr_instances_have_distinct_titles(
         cfg_for("sonarr", a.url, name="Sonarr TV")
         + cfg_for("sonarr", b.url, name="Sonarr Anime")
     )
-    out = run_cli("--config", str(cfg), "--color", "never").out
+    out = run_cli("--config", str(cfg), "--width", "200", "--color", "never").out
     assert "Sonarr TV" in out
     assert "Sonarr Anime" in out
     assert out.count("Missing") == 2
@@ -83,8 +84,8 @@ def test_radarr_and_lidarr_render(
 ) -> None:
     rad = servarr(fake_server, "radarr", health="health_error.json")
     lid = servarr(fake_server, "lidarr", version="v1")
-    cfg = write_config(cfg_for("radarr", rad.url) + cfg_for("lidarr", lid.url))
-    out = run_cli("--config", str(cfg), "--width", "70", "--color", "never").out
+    cfg = write_config(HEAD + cfg_for("radarr", rad.url) + cfg_for("lidarr", lid.url))
+    out = run_cli("--config", str(cfg), "--width", "200", "--color", "never").out
     assert "Radarr" in out
     assert "Lidarr" in out
     assert "No download client is available" in out
@@ -102,8 +103,10 @@ def test_warn_crit_applies_to_missing_only(
         "warn": "warn = 10\ncrit = 20\n",
         "crit": "warn = 5\ncrit = 12\n",
     }.items():
-        cfg = write_config(cfg_for("sonarr", srv.url, extra))
-        outs[label] = run_cli("--config", str(cfg), "--color", "always").out
+        cfg = write_config(HEAD + cfg_for("sonarr", srv.url, extra))
+        outs[label] = run_cli(
+            "--config", str(cfg), "--width", "200", "--color", "always"
+        ).out
     yellow, red = "\x1b[33m", "\x1b[31m"
     assert yellow not in outs["none"] and red not in outs["none"]
     assert yellow in outs["warn"] and red not in outs["warn"]
@@ -115,8 +118,8 @@ def test_warn_crit_applies_to_missing_only(
 def test_unreachable_instance_is_unavailable(
     run_cli: RunCli, write_config: WriteConfig
 ) -> None:
-    cfg = write_config(cfg_for("radarr", closed_port_url(), name="Down"))
-    r = run_cli("--config", str(cfg), "--color", "never")
+    cfg = write_config(HEAD + cfg_for("radarr", closed_port_url(), name="Down"))
+    r = run_cli("--config", str(cfg), "--width", "200", "--color", "never")
     assert r.code == 0
     assert "Down" in r.out
     assert "UNAVAILABLE" in r.out
@@ -126,8 +129,8 @@ def test_bad_api_key_is_unavailable(
     run_cli: RunCli, write_config: WriteConfig, fake_server: MakeServer
 ) -> None:
     srv = servarr(fake_server, "sonarr")
-    cfg = write_config(cfg_for("sonarr", srv.url).replace(KEY, "wrong"))
-    out = run_cli("--config", str(cfg), "--color", "never").out
+    cfg = write_config(HEAD + cfg_for("sonarr", srv.url).replace(KEY, "wrong"))
+    out = run_cli("--config", str(cfg), "--width", "200", "--color", "never").out
     assert "UNAVAILABLE" in out
     assert "API key" in out
 
@@ -135,8 +138,8 @@ def test_bad_api_key_is_unavailable(
 def test_missing_url_is_invalid_config(
     run_cli: RunCli, write_config: WriteConfig
 ) -> None:
-    cfg = write_config('[[modules]]\nkind = "sonarr"\napi_key = "k"\n')
-    out = run_cli("--config", str(cfg), "--color", "never").out
+    cfg = write_config(HEAD + '[[modules]]\nkind = "sonarr"\napi_key = "k"\n')
+    out = run_cli("--config", str(cfg), "--width", "200", "--color", "never").out
     assert "invalid config" in out
     assert "url" in out
 
@@ -146,7 +149,7 @@ def test_calendar_failure_does_not_hide_other_rows(
 ) -> None:
     srv = servarr(fake_server, "sonarr")
     srv.add("/api/v3/calendar", json={"error": "boom"}, status=500)
-    cfg = write_config(cfg_for("sonarr", srv.url))
-    out = run_cli("--config", str(cfg), "--color", "never").out
+    cfg = write_config(HEAD + cfg_for("sonarr", srv.url))
+    out = run_cli("--config", str(cfg), "--width", "200", "--color", "never").out
     assert "UNAVAILABLE" not in out
     assert "Missing" in out
