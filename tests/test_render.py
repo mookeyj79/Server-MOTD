@@ -61,7 +61,7 @@ def test_kinds(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_uptime_golden(
     run_cli: RunCli, write_config: WriteConfig, pin_uptime: None, assert_golden: Golden
 ) -> None:
-    cfg = write_config('[[modules]]\nkind = "uptime"\n')
+    cfg = write_config('title = "host"\n[[modules]]\nkind = "uptime"\n')
     r = run_cli("--config", str(cfg), "--width", "40", "--color", "never")
     assert r.code == 0
     assert_golden("uptime.txt", r.out)

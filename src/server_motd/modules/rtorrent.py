@@ -8,6 +8,7 @@ converted to bits) and torrent counts by state.
 from __future__ import annotations
 
 import socket
+import sys
 import xmlrpc.client
 from typing import Any
 
@@ -41,6 +42,8 @@ class ScgiTransport(xmlrpc.client.Transport):
         msg = str(len(hdr)).encode() + b":" + hdr + b"," + request_body
         if isinstance(self.address, tuple):
             sock = socket.create_connection(self.address, timeout=self.timeout)
+        elif sys.platform == "win32":
+            raise RuntimeError("unix sockets are not supported on Windows")
         else:
             sock = socket.socket(socket.AF_UNIX)
             sock.settimeout(self.timeout)

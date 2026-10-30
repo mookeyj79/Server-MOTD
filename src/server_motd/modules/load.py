@@ -17,9 +17,9 @@ from server_motd.modules._common import Thresholds
 class Load:
     def __init__(self, spec: ModuleSpec) -> None:
         self.title = spec.name or "Load"
+        self.limits = Thresholds(spec)
         if sys.platform == "win32":
             raise ConfigError("load is not available on Windows; use the cpu module")
-        self.limits = Thresholds(spec)
         spec.done()
 
     def fetch(self) -> Result:
