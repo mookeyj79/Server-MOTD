@@ -12,6 +12,7 @@ from pathlib import Path
 
 from server_motd.config import ModuleSpec
 from server_motd.model import Result, Row, Status
+from server_motd.modules._common import worst
 
 UPDATES_FILE = "/var/lib/update-notifier/updates-available"
 REBOOT_FILE = "/var/run/reboot-required"
@@ -52,11 +53,4 @@ class Updates:
                 Status.WARN if reboot else Status.OK,
             )
         )
-        return Result(self.title, rows, max((r.status for r in rows), key=_rank))
-
-
-_ORDER = [Status.INFO, Status.OK, Status.WARN, Status.CRIT]
-
-
-def _rank(s: Status) -> int:
-    return _ORDER.index(s)
+        return Result(self.title, rows, worst(rows))

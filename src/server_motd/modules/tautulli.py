@@ -13,17 +13,15 @@ against a live instance (docs/research/tautulli-api.md).
 
 from __future__ import annotations
 
-import json
-import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from server_motd.config import ConfigError, ModuleSpec
+from server_motd.config import ModuleSpec
 from server_motd.model import Result, Row, Status
+from server_motd.modules import _http
 
-REQUEST_TIMEOUT = 5.0
 _COUNTS = (
     ("stream_count_direct_play", "direct play"),
     ("stream_count_direct_stream", "direct stream"),
@@ -44,14 +42,8 @@ class Tautulli:
 
     def __init__(self, spec: ModuleSpec) -> None:
         self.title = spec.name or self.default_title
-        url = spec.take("url", str)
-        key = spec.take_secret("api_key")
-        if not url:
-            raise ConfigError("'url' is required")
-        if not key:
-            raise ConfigError("'api_key' is required")
-        self.base = url.rstrip("/") + "/api/v2"
-        self.key = key
+        url, self.key = _http.take_url_and_key(spec)
+        self.base = url + "/api/v2"
         spec.done()
 
     def _call(self, cmd: str) -> Any:
@@ -59,17 +51,7 @@ class Tautulli:
             f"{self.base}?{urllib.parse.urlencode({'cmd': cmd})}",
             headers={"X-Api-Key": self.key},
         )
-        try:
-            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
-                body = json.load(resp)
-        except urllib.error.HTTPError as exc:
-            if exc.code in (401, 403):
-                raise RuntimeError(f"bad API key (HTTP {exc.code})") from exc
-            raise RuntimeError(f"HTTP {exc.code}") from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError(f"unreachable: {exc.reason}") from exc
-        except (OSError, ValueError) as exc:
-            raise RuntimeError(f"bad response: {exc}") from exc
+        body = _http.get_json(req)
         try:
             response = body["response"]
             if response["result"] != "success":

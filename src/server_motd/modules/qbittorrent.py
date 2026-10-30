@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import http.cookiejar
 import json
-import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
@@ -19,9 +18,8 @@ from typing import Any
 
 from server_motd.config import ConfigError, ModuleSpec
 from server_motd.model import Result, Row, Status
+from server_motd.modules import _http
 from server_motd.modules._common import human_bytes, worst
-
-REQUEST_TIMEOUT = 2.5
 
 # State names differ between 4.x (paused*) and 5.x (stopped*).
 _BUCKETS = {
@@ -52,17 +50,8 @@ class QBittorrent:
         self, opener: urllib.request.OpenerDirector, path: str, data: Any = None
     ) -> str:
         body = urllib.parse.urlencode(data).encode() if data is not None else None
-        try:
-            with opener.open(self.base + path, body, timeout=REQUEST_TIMEOUT) as resp:
-                return str(resp.read().decode("utf-8", "replace"))
-        except urllib.error.HTTPError as exc:
-            if exc.code in (401, 403):
-                raise RuntimeError(f"login failed (HTTP {exc.code})") from exc
-            raise RuntimeError(f"HTTP {exc.code}") from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError(f"unreachable: {exc.reason}") from exc
-        except OSError as exc:
-            raise RuntimeError(f"bad response: {exc}") from exc
+        raw = _http.read(opener.open, self.base + path, body, auth_error="login failed")
+        return raw.decode("utf-8", "replace")
 
     def fetch(self) -> Result:
         jar = http.cookiejar.CookieJar()
@@ -73,7 +62,7 @@ class QBittorrent:
         try:
             data = json.loads(self._open(opener, "/sync/maindata"))
             state = data["server_state"]
-            counts = Counter(t["state"] for t in data["torrents"].values())
+            counts = Counter(t["state"] for t in data.get("torrents", {}).values())
             rows = [
                 Row("Down", f"{human_bytes(state['dl_info_speed'])}/s"),
                 Row("Up", f"{human_bytes(state['up_info_speed'])}/s"),

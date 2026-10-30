@@ -20,9 +20,11 @@ base URL (no trailing slash). `closed_port_url()` gives a refused-connection URL
 
 from __future__ import annotations
 
+import contextlib
 import json
 import socket
 import threading
+import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -50,19 +52,26 @@ class FakeServer:
         self._routes: dict[str, tuple[int, bytes]] = {}
         self._extras: dict[str, tuple[dict[str, str], str | None]] = {}
         self._query_routes: list[tuple[str, dict[str, str], int, bytes]] = []
+        self._delays: dict[str, float] = {}
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:
-                outer._handle(self)
+                self._serve()
 
             def do_POST(self) -> None:
-                outer._handle(self)
+                self._serve()
+
+            def _serve(self) -> None:
+                # The client may give up (time out) before the reply is sent.
+                with contextlib.suppress(BrokenPipeError, ConnectionResetError):
+                    outer._handle(self)
 
             def log_message(self, format: str, *args: Any) -> None:
                 pass
 
         self._httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self._httpd.daemon_threads = True
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
 
     @property
@@ -80,6 +89,7 @@ class FakeServer:
         text: str | None = None,
         headers: dict[str, str] | None = None,
         need_cookie: str | None = None,
+        delay: float = 0.0,
     ) -> None:
         """Serve a fixture file (relative to tests/fixtures) or inline JSON.
 
@@ -88,8 +98,12 @@ class FakeServer:
 
         `text` serves a plain body; `headers` are extra response headers (e.g.
         Set-Cookie); `need_cookie` ("NAME=value") answers 403 unless the Cookie
-        header has it. POST is served too; bodies are recorded in `Request.body`.
+        header has it. `delay` sleeps that many seconds before answering the
+        path (to exercise client timeouts). POST is served too; bodies are
+        recorded in `Request.body`.
         """
+        if delay:
+            self._delays[path] = delay
         if fixture is not None:
             body = (FIXTURES / fixture).read_bytes()
         elif text is not None:
@@ -125,6 +139,7 @@ class FakeServer:
             Request(parts.path, dict(parse_qsl(parts.query)), headers, posted)
         )
         extra: dict[str, str] = {}
+        time.sleep(self._delays.get(parts.path, 0.0))
         if self.auth and headers.get(self.auth[0].lower()) != self.auth[1]:
             status, body = 401, b'{"error": "Unauthorized"}'
         else:

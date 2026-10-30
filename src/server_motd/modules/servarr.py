@@ -9,19 +9,16 @@ Options: `url` and `api_key` (required; `api_key` also accepts `${ENV}` or
 from __future__ import annotations
 
 import contextlib
-import json
-import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from server_motd.config import ConfigError, ModuleSpec
+from server_motd.config import ModuleSpec
 from server_motd.model import Result, Row, Status
-
-REQUEST_TIMEOUT = 2.5
-_ORDER = [Status.INFO, Status.OK, Status.WARN, Status.CRIT, Status.UNAVAILABLE]
+from server_motd.modules import _http
+from server_motd.modules._common import Thresholds, worst
 
 
 class Servarr:
@@ -31,16 +28,9 @@ class Servarr:
 
     def __init__(self, spec: ModuleSpec) -> None:
         self.title = spec.name or self.default_title
-        url = spec.take("url", str)
-        key = spec.take_secret("api_key")
-        if not url:
-            raise ConfigError("'url' is required")
-        if not key:
-            raise ConfigError("'api_key' is required")
-        self.base = url.rstrip("/") + self.api_prefix
-        self.key = key
-        self.warn: int | None = spec.take("warn", int)
-        self.crit: int | None = spec.take("crit", int)
+        url, self.key = _http.take_url_and_key(spec)
+        self.base = url + self.api_prefix
+        self.thresholds = Thresholds(spec)
         self.days: int = spec.take("calendar_days", int, 7)
         spec.done()
 
@@ -49,17 +39,7 @@ class Servarr:
         if params:
             url += "?" + urllib.parse.urlencode(params)
         req = urllib.request.Request(url, headers={"X-Api-Key": self.key})
-        try:
-            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
-                return json.load(resp)
-        except urllib.error.HTTPError as exc:
-            if exc.code in (401, 403):
-                raise RuntimeError(f"bad API key (HTTP {exc.code})") from exc
-            raise RuntimeError(f"HTTP {exc.code}") from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError(f"unreachable: {exc.reason}") from exc
-        except (OSError, ValueError) as exc:
-            raise RuntimeError(f"bad response: {exc}") from exc
+        return _http.get_json(req)
 
     def fetch(self) -> Result:
         now = datetime.now(UTC)
@@ -80,8 +60,7 @@ class Servarr:
             ]
             with contextlib.suppress(Exception):  # the calendar is optional
                 rows.append(Row("Upcoming", str(len(calendar.result()))))
-        status = max((r.status for r in rows), key=_ORDER.index)
-        return Result(self.title, rows, status)
+        return Result(self.title, rows, worst(rows))
 
     @staticmethod
     def _queue_row(data: dict[str, Any]) -> Row:
@@ -94,11 +73,9 @@ class Servarr:
 
     def _missing_row(self, data: dict[str, Any]) -> Row:
         count = int(data["totalRecords"])
-        status = Status.INFO
-        if self.crit is not None and count >= self.crit:
-            status = Status.CRIT
-        elif self.warn is not None and count >= self.warn:
-            status = Status.WARN
+        status = self.thresholds.status(count)
+        if status is Status.OK:  # Missing stays neutral when no threshold is hit
+            status = Status.INFO
         return Row("Missing", str(count), status)
 
     @staticmethod

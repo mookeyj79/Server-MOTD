@@ -1,4 +1,4 @@
-"""Helpers shared by system modules: warn/crit thresholds and size formatting."""
+"""Helpers shared by the modules: thresholds, status ranking, size formatting."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from server_motd.config import ConfigError, ModuleSpec
 from server_motd.model import Row, Status
 
-_SEVERITY = [Status.INFO, Status.OK, Status.WARN, Status.CRIT]
+_SEVERITY = [Status.INFO, Status.OK, Status.WARN, Status.CRIT, Status.UNAVAILABLE]
 
 
 class Thresholds:

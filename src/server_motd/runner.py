@@ -39,14 +39,16 @@ def run(
                 verbose_log.append(f"{title}:\n{traceback.format_exc()}")
             slots[i] = unavailable(title, str(exc) or type(exc).__name__)
 
-    start = time.monotonic()
-    threads = []
+    run_start = time.monotonic()
+    threads: list[tuple[threading.Thread, float]] = []
     for i, (title, module) in enumerate(modules):
         t = threading.Thread(target=work, args=(i, title, module), daemon=True)
         t.start()
-        threads.append(t)
-    deadline = start + min(MODULE_TIMEOUT, TOTAL_TIMEOUT)
-    for t in threads:
+        # Each module gets MODULE_TIMEOUT from its own start, capped by the
+        # TOTAL_TIMEOUT for the whole run.
+        deadline = min(time.monotonic() + MODULE_TIMEOUT, run_start + TOTAL_TIMEOUT)
+        threads.append((t, deadline))
+    for t, deadline in threads:
         t.join(max(0.0, deadline - time.monotonic()))
     return [
         slot if slot is not None else unavailable(modules[i][0], "timed out")

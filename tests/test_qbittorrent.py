@@ -99,6 +99,17 @@ def test_unreachable_is_unavailable(run_cli: RunCli, write_config: WriteConfig) 
     assert "UNAVAILABLE" in r.out.upper()
 
 
+def test_client_with_no_torrents_still_shows_rates(
+    run_cli: RunCli, write_config: WriteConfig, fake_server: MakeServer
+) -> None:
+    srv = qbit(fake_server, "maindata_empty.json", "SID=abc", 200, "Ok.")
+    r = run(run_cli, write_config, cfg(srv.url))
+    assert "UNAVAILABLE" not in r.out.upper()
+    assert "2.0M/s" in r.out
+    assert "512.0K/s" in r.out
+    assert re.search(r"Downloading\s+0\b", r.out)
+
+
 def test_empty_credentials_allowed(
     run_cli: RunCli, write_config: WriteConfig, fake_server: MakeServer
 ) -> None:
