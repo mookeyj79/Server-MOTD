@@ -1,0 +1,96 @@
+# Example server-motd config covering every module kind.
+# Copy to /etc/server-motd/config.toml (Debian) or
+# %APPDATA%\server-motd\config.toml (Windows), delete what you do not need.
+# Validate with:  server-motd --config docs/example-config.toml check
+# Secrets use ${ENV_VAR}; use api_key_file / password_file for a file instead.
+
+title = "media-box" # banner text; defaults to the hostname
+box = "single"      # single | double | rounded | ascii
+
+# --- System modules (warn/crit are optional thresholds) ---------------------
+
+[[modules]]
+kind = "ips"
+
+[[modules]]
+kind = "uptime"
+
+[[modules]]
+kind = "load"   # Linux only; use "cpu" on Windows
+warn = 0.7      # per core, 1-minute average
+crit = 1.0
+
+[[modules]]
+kind = "cpu"
+warn = 80       # percent
+crit = 95
+
+[[modules]]
+kind = "memory"
+warn = 80       # percent of RAM used
+crit = 95
+
+[[modules]]
+kind = "disks"
+warn = 80       # percent used, per filesystem
+crit = 90
+
+[[modules]]
+kind = "logins"
+warn = 3        # session count
+
+[[modules]]
+kind = "processes"
+warn = 400      # process count
+
+[[modules]]
+kind = "updates"  # Debian family; paths below are the defaults
+updates_file = "/var/lib/update-notifier/updates-available"
+reboot_file = "/var/run/reboot-required"
+
+# --- Service modules (several instances of a kind are allowed) --------------
+
+[[modules]]
+kind = "tautulli"
+url = "http://localhost:8181"
+api_key = "${TAUTULLI_API_KEY}"
+
+[[modules]]
+kind = "qbittorrent"
+url = "http://localhost:8080"
+username = "admin"                 # optional
+password = "${QBIT_PASSWORD}"      # optional
+
+[[modules]]
+kind = "sabnzbd"
+url = "http://localhost:8085"
+api_key = "${SABNZBD_API_KEY}"
+
+[[modules]]
+kind = "rtorrent"
+scgi = "127.0.0.1:5000"            # host:port or unix:/path/to/socket
+
+[[modules]]
+kind = "sonarr"
+name = "Sonarr"
+url = "http://localhost:8989"
+api_key = "${SONARR_API_KEY}"
+warn = 10          # Missing count
+crit = 50
+calendar_days = 7
+
+[[modules]]
+kind = "sonarr"    # a second instance needs its own name
+name = "Sonarr 4K"
+url = "http://localhost:8990"
+api_key = "${SONARR_API_KEY}"
+
+[[modules]]
+kind = "radarr"
+url = "http://localhost:7878"
+api_key = "${RADARR_API_KEY}"
+
+[[modules]]
+kind = "lidarr"
+url = "http://localhost:8686"
+api_key = "${LIDARR_API_KEY}"
