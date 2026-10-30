@@ -27,7 +27,6 @@ testpaths = ["tests"]
 [tool.ruff]
 src = ["src", "tests"]
 target-version = "py311"
-# Legacy v1 files are out of scope until deleted.
 include = ["src/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint]
