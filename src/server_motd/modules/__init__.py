@@ -17,7 +17,16 @@ from collections.abc import Callable
 
 from server_motd.config import ModuleSpec
 from server_motd.model import Module
-from server_motd.modules import disks, ips, load, logins, memory, processes, uptime
+from server_motd.modules import (
+    disks,
+    ips,
+    load,
+    logins,
+    memory,
+    processes,
+    updates,
+    uptime,
+)
 
 REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "disks": disks.Disks,
@@ -26,5 +35,6 @@ REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "logins": logins.Logins,
     "memory": memory.Memory,
     "processes": processes.Processes,
+    "updates": updates.Updates,
     "uptime": uptime.Uptime,
 }
