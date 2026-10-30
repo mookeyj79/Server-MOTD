@@ -1,0 +1,7 @@
+---
+- name: Remove server_motd
+  hosts: all
+  roles:
+    - role: server_motd
+      vars:
+        server_motd_state: absent

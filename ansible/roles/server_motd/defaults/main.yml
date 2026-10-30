@@ -1,0 +1,26 @@
+---
+# present | absent
+server_motd_state: present
+
+# One structured dict rendered to config.toml: top-level title/box plus a
+# modules list (see the project README). Inline secrets may be vaulted.
+server_motd_config:
+  modules: []
+
+server_motd_user: server-motd
+server_motd_base_dir: /opt/server-motd
+server_motd_venv: "{{ server_motd_base_dir }}/venv"
+server_motd_config_dir: /etc/server-motd
+server_motd_hook_dir: /etc/update-motd.d
+server_motd_hook_name: 50-server-motd
+
+# Hash-pinned lockfile installed with --require-hashes.
+server_motd_lockfile: "{{ role_path }}/files/requirements.lock"
+
+# Development/CI override: path to a wheel to install instead of the lockfile
+# (no hash checking). Leave empty in production.
+server_motd_package_src: ""
+
+server_motd_apt_packages:
+  - python3
+  - python3-venv

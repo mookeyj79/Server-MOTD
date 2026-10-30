@@ -1,0 +1,8 @@
+---
+- name: Install server-motd
+  ansible.builtin.include_tasks: present.yml
+  when: server_motd_state == 'present'
+
+- name: Remove server-motd
+  ansible.builtin.include_tasks: absent.yml
+  when: server_motd_state == 'absent'

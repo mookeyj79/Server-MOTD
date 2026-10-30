@@ -1,0 +1,48 @@
+---
+argument_specs:
+  main:
+    short_description: Install or remove the server-motd login MOTD
+    options:
+      server_motd_state:
+        type: str
+        default: present
+        choices: [present, absent]
+        description: Install (present) or remove everything the role installed (absent).
+      server_motd_config:
+        type: dict
+        default: {modules: []}
+        description: Structured config rendered to config.toml. Values may be vaulted.
+      server_motd_user:
+        type: str
+        default: server-motd
+        description: System user the hook drops privileges to.
+      server_motd_base_dir:
+        type: path
+        default: /opt/server-motd
+        description: Root-owned install directory.
+      server_motd_venv:
+        type: path
+        description: Virtualenv path (default base_dir/venv).
+      server_motd_config_dir:
+        type: path
+        default: /etc/server-motd
+        description: Directory holding config.toml.
+      server_motd_hook_dir:
+        type: path
+        default: /etc/update-motd.d
+        description: Directory for the hook script.
+      server_motd_hook_name:
+        type: str
+        default: 50-server-motd
+        description: File name of the hook script.
+      server_motd_lockfile:
+        type: path
+        description: Hash-pinned requirements file (default files/requirements.lock in the role).
+      server_motd_package_src:
+        type: str
+        default: ""
+        description: Wheel path to install instead of the lockfile (development and CI).
+      server_motd_apt_packages:
+        type: list
+        elements: str
+        description: Packages required to build the venv.
