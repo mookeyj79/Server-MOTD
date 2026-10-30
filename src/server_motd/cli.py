@@ -25,10 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
     # SUPPRESS keeps values given before the subcommand from being overwritten.
     check.add_argument("--config", type=Path, default=argparse.SUPPRESS)
     check.add_argument("--verbose", action="store_true", default=argparse.SUPPRESS)
-    sub.add_parser("install-profile", help="add the server-motd block to PowerShell profiles")
-    sub.add_parser(
-        "uninstall-profile", help="remove the server-motd block from PowerShell profiles"
-    )
+    sub.add_parser("install-profile", help="add the profile block")
+    sub.add_parser("uninstall-profile", help="remove the profile block")
     return p
 
 
