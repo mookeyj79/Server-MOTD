@@ -10,7 +10,7 @@ This project is a fork of Cloudbox-MOTD, renamed and now independent. The new ve
 
  - Pure Python 3.11+, with `psutil` the only third-party dependency
  - Linux (Debian/Ubuntu) and Windows (PowerShell 7 and 5.1)
- - System modules: IPs, last login, uptime, load, memory, disks, logins, processes, pending updates and reboot
+ - System modules: IPs, uptime, load, memory, disks, logins, processes, pending updates and reboot
  - Service modules: Tautulli, qBittorrent, SABnzbd, Sonarr, Radarr, Lidarr, rTorrent
  - Several named instances of any service (for example two Sonarrs)
  - TOML config with `${ENV_VAR}` and `*_file` secrets
