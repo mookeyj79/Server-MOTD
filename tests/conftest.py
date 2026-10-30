@@ -11,6 +11,7 @@ import psutil
 import pytest
 
 from server_motd.cli import main
+from tests.fakeserver import fake_server  # noqa: F401  (fixture)
 
 GOLDEN = Path(__file__).parent / "golden"
 

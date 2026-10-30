@@ -1,0 +1,7 @@
+┌──────────────────────────────────────────────────────────┐
+│ Sonarr                                                   │
+│ Queue     5 (errors)                                     │
+│ Missing   12                                             │
+│ Health    Indexers unavailable due to failures: NZBgeek  │
+│ Upcoming  2                                              │
+└──────────────────────────────────────────────────────────┘
