@@ -46,7 +46,7 @@ class FakeServer:
     def __init__(self, auth: tuple[str, str] | None = None) -> None:
         self.auth = auth
         self.requests: list[Request] = []
-        self._routes: dict[str, tuple[int, bytes]] = {}
+        self._routes: dict[str, list[tuple[dict[str, str], int, bytes]]] = {}
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -70,13 +70,24 @@ class FakeServer:
         fixture: str | None = None,
         json: Any = None,
         status: int = 200,
+        query: dict[str, str] | None = None,
+        raw: bytes | None = None,
     ) -> None:
-        """Serve a fixture file (relative to tests/fixtures) or inline JSON."""
-        if fixture is not None:
+        """Serve a fixture file (relative to tests/fixtures) or inline JSON.
+
+        `query` restricts the route to requests carrying those query items
+        (for APIs that multiplex on `?cmd=`); `raw` serves literal bytes.
+        """
+        if raw is not None:
+            body = raw
+        elif fixture is not None:
             body = (FIXTURES / fixture).read_bytes()
         else:
             body = _dumps(json)
-        self._routes[path] = (status, body)
+        routes = self._routes.setdefault(path, [])
+        routes[:] = [r for r in routes if r[0] != (query or {})]
+        routes.append((query or {}, status, body))
+        routes.sort(key=lambda r: -len(r[0]))  # most specific first
 
     def start(self) -> None:
         self._thread.start()
@@ -92,8 +103,14 @@ class FakeServer:
         if self.auth and headers.get(self.auth[0].lower()) != self.auth[1]:
             status, body = 401, b'{"error": "Unauthorized"}'
         else:
-            status, body = self._routes.get(
-                parts.path, (404, b'{"error": "not found"}')
+            query = dict(parse_qsl(parts.query))
+            status, body = next(
+                (
+                    (s, b)
+                    for q, s, b in self._routes.get(parts.path, [])
+                    if q.items() <= query.items()
+                ),
+                (404, b'{"error": "not found"}'),
             )
         h.send_response(status)
         h.send_header("Content-Type", "application/json")
