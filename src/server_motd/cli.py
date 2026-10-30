@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import socket
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -98,6 +99,7 @@ def _check(args: argparse.Namespace) -> int:
 def _render(args: argparse.Namespace) -> int:
     try:
         entries = config.load(args.config)
+        settings = config.load_settings(args.config)
     except ConfigError as exc:
         print(f"server-motd: {exc}", file=sys.stderr)
         return 0
@@ -110,7 +112,12 @@ def _render(args: argparse.Namespace) -> int:
 
     width = args.width or shutil.get_terminal_size((80, 24)).columns
     color = args.color == "always" or (args.color == "auto" and sys.stdout.isatty())
-    sys.stdout.write(render.render(results, width, color))
+    box = settings.box
+    if box not in render.BOX_STYLES:
+        print(f"server-motd: unknown box style '{box}', using single", file=sys.stderr)
+        box = "single"
+    title = settings.title or socket.gethostname()
+    sys.stdout.write(render.render(results, width, color, title, box))
     if args.verbose:
         for entry_log in log:
             print(entry_log, file=sys.stderr)

@@ -21,7 +21,7 @@ def render(
     run_cli: RunCli, write_config: WriteConfig, tmp_path: Path, extra: str = ""
 ) -> Run:
     cfg = write_config(
-        '[[modules]]\nkind = "updates"\n'
+        'title = "host"\n[[modules]]\nkind = "updates"\n'
         f'updates_file = "{(tmp_path / "updates-available").as_posix()}"\n'
         f'reboot_file = "{(tmp_path / "reboot-required").as_posix()}"\n' + extra
     )
