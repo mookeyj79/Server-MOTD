@@ -1,0 +1,1 @@
+[{"id": 1, "source": "IndexerStatusCheck", "type": "warning", "message": "Indexers unavailable due to failures: NZBgeek", "wikiUrl": "https://wiki.servarr.com/sonarr/system#indexers-are-unavailable-due-to-failures"}, {"id": 2, "source": "UpdateCheck", "type": "notice", "message": "New update is available", "wikiUrl": "https://wiki.servarr.com/sonarr/system"}]

@@ -24,6 +24,7 @@ from server_motd.modules import (
     logins,
     memory,
     processes,
+    servarr,
     updates,
     uptime,
 )
@@ -31,10 +32,13 @@ from server_motd.modules import (
 REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "disks": disks.Disks,
     "ips": ips.Ips,
+    "lidarr": servarr.Lidarr,
     "load": load.Load,
     "logins": logins.Logins,
     "memory": memory.Memory,
     "processes": processes.Processes,
+    "radarr": servarr.Radarr,
+    "sonarr": servarr.Sonarr,
     "updates": updates.Updates,
     "uptime": uptime.Uptime,
 }

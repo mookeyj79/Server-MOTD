@@ -39,3 +39,4 @@ locks/*
 .pytest_cache/
 /dist/
 *.egg-info/
+!tests/fixtures/**/*.json
