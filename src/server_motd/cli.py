@@ -9,7 +9,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from server_motd import config, profile, render, runner
+from server_motd import config, profile, render, runner, terminal
 from server_motd.config import BadEntry, ConfigError, ModuleSpec
 from server_motd.model import Module, Result, Status
 from server_motd.modules import REGISTRY
@@ -112,6 +112,8 @@ def _render(args: argparse.Namespace) -> int:
 
     width = args.width or shutil.get_terminal_size((80, 24)).columns
     color = args.color == "always" or (args.color == "auto" and sys.stdout.isatty())
+    if color and not terminal.enable_vt() and args.color == "auto":
+        color = False  # console cannot render escape codes: plain text
     box = settings.box
     if box not in render.BOX_STYLES:
         print(f"server-motd: unknown box style '{box}', using single", file=sys.stderr)
