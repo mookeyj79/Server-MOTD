@@ -18,18 +18,24 @@ from collections.abc import Callable
 from server_motd.config import ModuleSpec
 from server_motd.model import Module
 from server_motd.modules import (
+    cpu,
     disks,
     ips,
     load,
     logins,
     memory,
     processes,
+    qbittorrent,
+    rtorrent,
+    sabnzbd,
     servarr,
+    tautulli,
     updates,
     uptime,
 )
 
 REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
+    "cpu": cpu.Cpu,
     "disks": disks.Disks,
     "ips": ips.Ips,
     "lidarr": servarr.Lidarr,
@@ -37,8 +43,12 @@ REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "logins": logins.Logins,
     "memory": memory.Memory,
     "processes": processes.Processes,
+    "qbittorrent": qbittorrent.QBittorrent,
     "radarr": servarr.Radarr,
+    "rtorrent": rtorrent.Rtorrent,
+    "sabnzbd": sabnzbd.Sabnzbd,
     "sonarr": servarr.Sonarr,
+    "tautulli": tautulli.Tautulli,
     "updates": updates.Updates,
     "uptime": uptime.Uptime,
 }
