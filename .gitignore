@@ -31,3 +31,11 @@ locks/*
 # venv
 /venv/
 .claude/worktrees/
+
+# dev
+/.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+/dist/
+*.egg-info/
