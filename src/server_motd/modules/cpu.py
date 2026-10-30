@@ -25,5 +25,7 @@ class Cpu:
         cores = psutil.cpu_count() or 1
         status = self.limits.status(percent)
         return Result(
-            self.title, [Row("Usage", f"{percent:.0f}% ({cores} cores)", status)], status
+            self.title,
+            [Row("Usage", f"{percent:.0f}% ({cores} cores)", status)],
+            status,
         )
