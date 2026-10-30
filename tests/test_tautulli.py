@@ -85,7 +85,7 @@ def test_empty_reply_with_plex_up_is_an_error(
 def test_api_error_envelope_is_unavailable(
     run_cli: RunCli, write_config: WriteConfig, fake_server: MakeServer
 ) -> None:
-    srv = tautulli(fake_server, "activity_streams.json")
+    srv = fake_server(auth=("X-Api-Key", KEY))
     srv.add(
         "/api/v2",
         json={"response": {"result": "error", "message": "Invalid apikey", "data": {}}},
