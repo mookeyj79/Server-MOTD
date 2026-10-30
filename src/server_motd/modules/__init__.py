@@ -17,11 +17,12 @@ from collections.abc import Callable
 
 from server_motd.config import ModuleSpec
 from server_motd.model import Module
-from server_motd.modules import servarr, uptime
+from server_motd.modules import servarr, updates, uptime
 
 REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "lidarr": servarr.Lidarr,
     "radarr": servarr.Radarr,
     "sonarr": servarr.Sonarr,
+    "updates": updates.Updates,
     "uptime": uptime.Uptime,
 }
