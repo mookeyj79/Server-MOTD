@@ -30,3 +30,4 @@ locks/*
 
 # venv
 /venv/
+.claude/worktrees/
