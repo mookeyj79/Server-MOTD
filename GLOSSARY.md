@@ -39,3 +39,7 @@ _Avoid_: Line, stat
 **Status**:
 The semantic health of a row or result (info, ok, warn, crit, unavailable); the renderer maps it to colour.
 _Avoid_: Level, severity, colour
+
+**Profile block**:
+The marked span `install-profile` writes into a PowerShell profile to run the MOTD at login; everything outside the markers belongs to the user.
+_Avoid_: Snippet, hook
