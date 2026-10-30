@@ -8,7 +8,7 @@ The code below is **legacy v1** (Debian/Ubuntu bash fragments plus a Python help
 
 ## Running v1
 
-Linux only; no build, lint or test tooling. The Windows host has no working `python3` or `jq` (`python3` is a Store stub that fails silently in a chain); script and run everything in WSL. Run scripts in the Debian WSL distro (`wsl -d Debian -- bash -c 'cd /mnt/d/Dev/Media-Server-MOTD && python3 media-server-motd.py plexpy get_stream_counts'`). The fragments hardcode `/opt/motd` and `/etc/update-motd.d`, so a full render needs the repo installed there.
+Linux only; no build, lint or test tooling. The Windows host has no working `python3` or `jq` (`python3` is a Store stub that fails silently in a chain); script and run everything in WSL. Run scripts in the Debian WSL distro (`wsl -d Debian -- bash -c 'cd /mnt/d/Dev/Server-MOTD && python3 media-server-motd.py plexpy get_stream_counts'`). The fragments hardcode `/opt/motd` and `/etc/update-motd.d`, so a full render needs the repo installed there.
 
 ## v1 architecture notes
 
