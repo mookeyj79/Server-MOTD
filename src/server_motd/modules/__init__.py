@@ -17,8 +17,9 @@ from collections.abc import Callable
 
 from server_motd.config import ModuleSpec
 from server_motd.model import Module
-from server_motd.modules import uptime
+from server_motd.modules import updates, uptime
 
 REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
+    "updates": updates.Updates,
     "uptime": uptime.Uptime,
 }
