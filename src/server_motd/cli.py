@@ -8,7 +8,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from server_motd import config, render, runner
+from server_motd import config, profile, render, runner
 from server_motd.config import BadEntry, ConfigError
 from server_motd.model import Module, Result
 from server_motd.modules import REGISTRY
@@ -24,7 +24,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if raw[:1] in (["install-profile"], ["uninstall-profile"]):
+        return profile.run(raw[0])
+    args = build_parser().parse_args(raw)
     try:
         return _render(args)
     except Exception as exc:  # never block login
