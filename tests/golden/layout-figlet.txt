@@ -1,0 +1,18 @@
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ART1                                                                         │
+│ ART2                                                                         │
+├──────────────────────────────────────┬───────────────────────────────────────┤
+│ Alpha                                │ Gamma                                 │
+│ Info  plain                          │ Info  plain                           │
+│ Fine  all good                       │ Fine  all good                        │
+│ Hmm   getting full                   │ Hmm   getting full                    │
+│ Bad   on fire                        │ Bad   on fire                         │
+│ Long  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx… │ Long  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx…  │
+│                                      │                                       │
+│ Beta                                 │                                       │
+│ Info  plain                          │                                       │
+│ Fine  all good                       │                                       │
+│ Hmm   getting full                   │                                       │
+│ Bad   on fire                        │                                       │
+│ Long  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx… │                                       │
+└──────────────────────────────────────┴───────────────────────────────────────┘

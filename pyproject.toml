@@ -12,6 +12,7 @@ license = { file = "LICENSE" }
 dependencies = ["psutil"]
 
 [project.optional-dependencies]
+figlet = ["pyfiglet"]
 dev = ["pytest", "ruff", "mypy", "build", "types-psutil"]
 
 [project.scripts]

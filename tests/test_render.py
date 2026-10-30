@@ -113,7 +113,7 @@ def test_invalid_config_is_scoped_to_its_module(
         '[[modules]]\nkind = "nope"\nname = "Worse"\n'
         '[[modules]]\nkind = "uptime"\nname = "Good"\n'
     )
-    r = run_cli("--config", str(cfg), "--width", "80", "--color", "never")
+    r = run_cli("--config", str(cfg), "--width", "69", "--color", "never")
     assert r.code == 0
     assert "invalid config: unknown option(s): bogus" in r.out
     assert "invalid config: unknown kind 'nope'" in r.out
@@ -144,7 +144,7 @@ def test_unset_env_secret_degrades_only_that_module(
 ) -> None:
     monkeypatch.delenv("MOTD_TEST_MISSING", raising=False)
     cfg = write_config('[[modules]]\nkind = "secret"\ntoken = "${MOTD_TEST_MISSING}"\n')
-    r = run_cli("--config", str(cfg), "--width", "80", "--color", "never")
+    r = run_cli("--config", str(cfg), "--width", "200", "--color", "never")
     assert r.code == 0
     assert "MOTD_TEST_MISSING" in r.out
 

@@ -94,8 +94,35 @@ def default_config_paths() -> list[Path]:
     return [Path("/etc/server-motd/config.toml")]
 
 
+@dataclass
+class Settings:
+    """Top-level (non-module) config keys: `title` and `box`."""
+
+    title: str | None = None
+    box: str = "single"
+
+
+def load_settings(path: Path | None) -> Settings:
+    """Read the top-level keys; invalid values raise ConfigError."""
+    data = _read(path)
+    title, box = data.get("title"), data.get("box", "single")
+    if title is not None and not isinstance(title, str):
+        raise ConfigError("'title' must be a string")
+    if not isinstance(box, str):
+        raise ConfigError("'box' must be a string")
+    return Settings(title, box)
+
+
 def load(path: Path | None) -> list[ModuleSpec | BadEntry]:
     """Parse the config. Each entry is a ModuleSpec, or a BadEntry."""
+    data = _read(path)
+    entries = data.get("modules", [])
+    if not isinstance(entries, list):
+        raise ConfigError("'modules' must be an array of tables")
+    return [_parse_entry(e) for e in entries]
+
+
+def _read(path: Path | None) -> dict[str, Any]:
     candidates = [path] if path else default_config_paths()
     for candidate in candidates:
         if candidate.is_file():
@@ -108,10 +135,7 @@ def load(path: Path | None) -> list[ModuleSpec | BadEntry]:
         data = tomllib.loads(chosen.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError) as exc:
         raise ConfigError(f"{chosen}: {exc}") from exc
-    entries = data.get("modules", [])
-    if not isinstance(entries, list):
-        raise ConfigError("'modules' must be an array of tables")
-    return [_parse_entry(e) for e in entries]
+    return data
 
 
 def _parse_entry(entry: Any) -> ModuleSpec | BadEntry:
