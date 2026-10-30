@@ -1,0 +1,7 @@
+{
+  "throttle.global_down.rate": 1572864,
+  "throttle.global_up.rate": 262144,
+  "throttle.global_down.total": 5368709120,
+  "throttle.global_up.total": 10737418240,
+  "d.multicall2": [[1, 0], [1, 0], [1, 1], [0, 1]]
+}
