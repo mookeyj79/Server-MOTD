@@ -27,6 +27,7 @@ from server_motd.modules import (
     processes,
     sabnzbd,
     servarr,
+    tautulli,
     updates,
     uptime,
 )
@@ -43,6 +44,7 @@ REGISTRY: dict[str, Callable[[ModuleSpec], Module]] = {
     "radarr": servarr.Radarr,
     "sabnzbd": sabnzbd.Sabnzbd,
     "sonarr": servarr.Sonarr,
+    "tautulli": tautulli.Tautulli,
     "updates": updates.Updates,
     "uptime": uptime.Uptime,
 }
