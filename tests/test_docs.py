@@ -48,10 +48,14 @@ def test_readme_sample_is_real_output(
     sonarr.add("/api/v3/calendar", fixture="sonarr/calendar.json")
     tautulli = fake_server(auth=("X-Api-Key", KEY))
     tautulli.add(
-        "/api/v2", fixture="tautulli/activity_streams.json", query={"cmd": "get_activity"}
+        "/api/v2",
+        fixture="tautulli/activity_streams.json",
+        query={"cmd": "get_activity"},
     )
     tautulli.add(
-        "/api/v2", fixture="tautulli/server_status_up.json", query={"cmd": "server_status"}
+        "/api/v2",
+        fixture="tautulli/server_status_up.json",
+        query={"cmd": "server_status"},
     )
     cfg = write_config(
         'title = "media-box"\n'

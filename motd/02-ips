@@ -1,8 +1,0 @@
-#!/bin/bash
-
-source /etc/update-motd.d/colors.txt
-
-ips=$(ip -4 addr | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '^127\.')
-ip_list=$(echo "$ips" | awk '{printf "%s, ", $0} END {print ""}' | sed 's/, $//')
-
-echo -e " ${TITLE_COLOR}IPs.................:${NC} ${TEXT_COLOR}$ip_list${NC}"

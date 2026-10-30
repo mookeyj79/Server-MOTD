@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# run media-server-motd to ensure config is latest
-meh=$(python3 /opt/motd/media-server-motd.py config upgrade)
