@@ -8,7 +8,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from server_motd import config, render, runner
+from server_motd import config, profile, render, runner
 from server_motd.config import BadEntry, ConfigError, ModuleSpec
 from server_motd.model import Module, Result, Status
 from server_motd.modules import REGISTRY
@@ -25,6 +25,10 @@ def build_parser() -> argparse.ArgumentParser:
     # SUPPRESS keeps values given before the subcommand from being overwritten.
     check.add_argument("--config", type=Path, default=argparse.SUPPRESS)
     check.add_argument("--verbose", action="store_true", default=argparse.SUPPRESS)
+    sub.add_parser("install-profile", help="add the server-motd block to PowerShell profiles")
+    sub.add_parser(
+        "uninstall-profile", help="remove the server-motd block from PowerShell profiles"
+    )
     return p
 
 
@@ -33,6 +37,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "check":
             return _check(args)
+        if args.command in ("install-profile", "uninstall-profile"):
+            return profile.run(args.command)
         return _render(args)
     except Exception as exc:  # never block login
         print(f"server-motd: {exc}", file=sys.stderr)
