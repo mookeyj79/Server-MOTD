@@ -47,7 +47,9 @@ class FakeServer:
     def __init__(self, auth: tuple[str, str] | None = None) -> None:
         self.auth = auth
         self.requests: list[Request] = []
-        self._routes: dict[str, tuple[int, bytes, dict[str, str], str | None]] = {}
+        self._routes: dict[str, tuple[int, bytes]] = {}
+        self._extras: dict[str, tuple[dict[str, str], str | None]] = {}
+        self._query_routes: list[tuple[str, dict[str, str], int, bytes]] = []
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -74,15 +76,19 @@ class FakeServer:
         fixture: str | None = None,
         json: Any = None,
         status: int = 200,
+        query: dict[str, str] | None = None,
         text: str | None = None,
         headers: dict[str, str] | None = None,
         need_cookie: str | None = None,
     ) -> None:
-        """Serve a fixture file (relative to tests/fixtures), inline JSON or text.
+        """Serve a fixture file (relative to tests/fixtures) or inline JSON.
 
-        `headers` are extra response headers (e.g. Set-Cookie); `need_cookie`
-        ("NAME=value") makes the route answer 403 unless the Cookie header has it.
-        GET and POST are both served; POST bodies are recorded in `Request.body`.
+        With `query`, the route only matches requests carrying those query
+        params (checked before plain path routes).
+
+        `text` serves a plain body; `headers` are extra response headers (e.g.
+        Set-Cookie); `need_cookie` ("NAME=value") answers 403 unless the Cookie
+        header has it. POST is served too; bodies are recorded in `Request.body`.
         """
         if fixture is not None:
             body = (FIXTURES / fixture).read_bytes()
@@ -90,7 +96,12 @@ class FakeServer:
             body = text.encode("utf-8")
         else:
             body = _dumps(json)
-        self._routes[path] = (status, body, headers or {}, need_cookie)
+        if headers or need_cookie:
+            self._extras[path] = (headers or {}, need_cookie)
+        if query:
+            self._query_routes.append((path, query, status, body))
+        else:
+            self._routes[path] = (status, body)
 
     def start(self) -> None:
         self._thread.start()
@@ -98,6 +109,12 @@ class FakeServer:
     def stop(self) -> None:
         self._httpd.shutdown()
         self._httpd.server_close()
+
+    def _lookup(self, path: str, query: dict[str, str]) -> tuple[int, bytes]:
+        for p, want, status, body in self._query_routes:
+            if p == path and want.items() <= query.items():
+                return status, body
+        return self._routes.get(path, (404, b'{"error": "not found"}'))
 
     def _handle(self, h: BaseHTTPRequestHandler) -> None:
         parts = urlsplit(h.path)
@@ -111,9 +128,8 @@ class FakeServer:
         if self.auth and headers.get(self.auth[0].lower()) != self.auth[1]:
             status, body = 401, b'{"error": "Unauthorized"}'
         else:
-            status, body, extra, need = self._routes.get(
-                parts.path, (404, b'{"error": "not found"}', {}, None)
-            )
+            status, body = self._lookup(parts.path, dict(parse_qsl(parts.query)))
+            extra, need = self._extras.get(parts.path, ({}, None))
             if need and need not in headers.get("cookie", "").split("; "):
                 status, body, extra = 403, b"Forbidden", {}
         h.send_response(status)

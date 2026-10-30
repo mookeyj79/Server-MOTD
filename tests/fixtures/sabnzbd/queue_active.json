@@ -1,0 +1,1 @@
+{"queue": {"status": "Downloading", "paused": false, "kbpersec": "2048.50", "speed": "2.0 M", "mb": "10240.00", "mbleft": "4096.00", "size": "10.0 GB", "sizeleft": "4.0 GB", "noofslots": 1, "noofslots_total": 3, "timeleft": "0:34:12", "have_warnings": "0", "slots": [{"status": "Downloading", "filename": "Some.Release"}]}}
