@@ -32,3 +32,67 @@ jobs:
       - run: python -m build
       - name: Console script runs
         run: server-motd
+
+  ansible-lint:
+    name: ansible-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ansible-lint
+      - run: ansible-lint
+
+  debian-hook:
+    name: role and hook render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build ansible-core
+      - run: python -m build --wheel
+      - name: Apply the role to the runner
+        env:
+          ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+          ANSIBLE_STDOUT_CALLBACK: default
+        run: |
+          wheel=$(ls "$PWD"/dist/*.whl)
+          ansible-playbook -i localhost, -c local -b ansible/ci-present.yml \
+            -e "ansible_python_interpreter=$(command -v python3)" \
+            -e "server_motd_package_src=$wheel"
+      - name: Second run is idempotent
+        env:
+          ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+        run: |
+          wheel=$(ls "$PWD"/dist/*.whl)
+          ansible-playbook -i localhost, -c local -b ansible/ci-present.yml \
+            -e "ansible_python_interpreter=$(command -v python3)" \
+            -e "server_motd_package_src=$wheel" | tee run2.log
+          grep -E "changed=0 .*failed=0" run2.log
+      - name: Config is valid and private
+        run: |
+          sudo stat -c '%U %a' /etc/server-motd/config.toml | grep -x 'server-motd 600'
+          sudo -u server-motd /opt/server-motd/venv/bin/server-motd check
+      - name: MOTD renders through the hook
+        run: |
+          sudo /etc/update-motd.d/50-server-motd | tee motd.txt
+          grep -q "ci-host" motd.txt
+          sudo env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d | grep -q "ci-host"
+      - name: Hook exits 0 with the venv missing
+        run: |
+          sudo mv /opt/server-motd/venv /opt/server-motd/venv.off
+          sudo /etc/update-motd.d/50-server-motd
+          sudo mv /opt/server-motd/venv.off /opt/server-motd/venv
+      - name: state absent removes everything
+        env:
+          ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+        run: |
+          ansible-playbook -i localhost, -c local -b ansible/ci-absent.yml \
+            -e "ansible_python_interpreter=$(command -v python3)"
+          test ! -e /etc/update-motd.d/50-server-motd
+          test ! -e /opt/server-motd
+          test ! -e /etc/server-motd
+          ! getent passwd server-motd

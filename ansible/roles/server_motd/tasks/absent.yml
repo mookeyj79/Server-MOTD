@@ -1,0 +1,45 @@
+---
+- name: Remove the login hook
+  ansible.builtin.file:
+    path: "{{ server_motd_hook_dir }}/{{ server_motd_hook_name }}"
+    state: absent
+
+- name: Check whether the role created the hook directory
+  ansible.builtin.stat:
+    path: "{{ server_motd_base_dir }}/created-hook-dir"
+  register: server_motd_created_hook_dir
+
+- name: List what remains in the hook directory
+  ansible.builtin.find:
+    paths: "{{ server_motd_hook_dir }}"
+    file_type: any
+  register: server_motd_hook_dir_left
+  when: server_motd_created_hook_dir.stat.exists
+
+- name: Remove the hook directory if the role created it and it is empty
+  ansible.builtin.file:
+    path: "{{ server_motd_hook_dir }}"
+    state: absent
+  when:
+    - server_motd_created_hook_dir.stat.exists
+    - server_motd_hook_dir_left.matched == 0
+
+- name: Remove the config directory
+  ansible.builtin.file:
+    path: "{{ server_motd_config_dir }}"
+    state: absent
+
+- name: Remove the install directory (venv, lockfile, marker)
+  ansible.builtin.file:
+    path: "{{ server_motd_base_dir }}"
+    state: absent
+
+- name: Remove the service user
+  ansible.builtin.user:
+    name: "{{ server_motd_user }}"
+    state: absent
+
+- name: Remove the service group
+  ansible.builtin.group:
+    name: "{{ server_motd_user }}"
+    state: absent

@@ -1,0 +1,12 @@
+---
+# CI/dev: ansible-playbook -i localhost, -c local -b ansible/ci-present.yml
+- name: Exercise the server_motd role
+  hosts: all
+  roles:
+    - role: server_motd
+      vars:
+        server_motd_config:
+          title: ci-host
+          modules:
+            - kind: load
+            - kind: uptime

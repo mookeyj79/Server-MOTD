@@ -93,7 +93,7 @@ jobs:
       contents: write
       pull-requests: write
     env:
-      # Assumed location (ticket #29); the job is a no-op until it exists.
+      # Role lockfile (ticket #29); a placeholder until the first release fills it.
       LOCKFILE: ansible/roles/server_motd/files/requirements.lock
     steps:
       - uses: actions/checkout@v4
