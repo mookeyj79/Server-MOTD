@@ -1,4 +1,5 @@
-# Placeholder. Regenerated with `pip-compile --generate-hashes` for
-# server-motd==<version> by the lockfile-pr job in .github/workflows/release.yml
-# after each release (see docs/releasing.md). The role refuses to install from
-# this file until it contains a hash-pinned `server-motd==` entry.
+# Placeholder. Regenerated with `pip-compile --generate-hashes --strip-extras`
+# for server-motd[figlet]==<version> by the lockfile-pr job in
+# .github/workflows/release.yml after each release (see docs/releasing.md).
+# The role refuses to install from this file until it contains a hash-pinned
+# `server-motd==` entry.
