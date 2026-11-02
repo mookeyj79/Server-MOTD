@@ -94,14 +94,14 @@
   ansible.builtin.copy:
     content: "{{ server_motd_config | server_motd_toml }}"
     dest: "{{ server_motd_config_dir }}/config.toml"
-    owner: "{{ server_motd_user }}"
+    owner: root
     group: "{{ server_motd_user }}"
-    mode: "0600"
+    mode: "0640"
   no_log: true
 
 - name: Install the login hook
-  ansible.builtin.copy:
-    src: 50-server-motd
+  ansible.builtin.template:
+    src: 50-server-motd.j2
     dest: "{{ server_motd_hook_dir }}/{{ server_motd_hook_name }}"
     owner: root
     group: root

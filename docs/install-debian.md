@@ -1,6 +1,6 @@
 # Install on Debian/Ubuntu (Ansible)
 
-The repository ships an Ansible role, `ansible/roles/server_motd`. It creates a locked-down system user, a virtualenv under `/opt/server-motd/venv`, `/etc/server-motd/config.toml` (mode 0600) and an `update-motd.d` hook (`/etc/update-motd.d/50-server-motd`) that runs the MOTD as that user. It does not wipe the other `update-motd.d` fragments.
+The repository ships an Ansible role, `ansible/roles/server_motd`. It creates a locked-down system user, a virtualenv under `/opt/server-motd/venv`, `/etc/server-motd/config.toml` (owned by root, group-readable by that user, mode 0640) and an `update-motd.d` hook (`/etc/update-motd.d/50-server-motd`) that runs the MOTD as that user. It does not wipe the other `update-motd.d` fragments.
 
 ## Apply the role
 
@@ -28,7 +28,7 @@ Check out this repository (or copy `ansible/roles/server_motd` into your own rol
 ANSIBLE_ROLES_PATH=ansible/roles ansible-playbook -i myhost, site.yml
 ```
 
-`server_motd_config` is a structured dict rendered to `config.toml`: top-level `title` and `box`, plus a `modules` list with the same keys as the [configuration reference](configuration.md). Inline secrets may be vaulted; the file is `0600` and the task does not log it.
+`server_motd_config` is a structured dict rendered to `config.toml`: top-level `title` and `box`, plus a `modules` list with the same keys as the [configuration reference](configuration.md). Inline secrets may be vaulted; the file is `root:server-motd 0640` (the service user can read but not rewrite it) and the task does not log it.
 
 The package is installed from a hash-pinned lockfile (`files/requirements.lock`), which is refreshed after each release (see [releasing](releasing.md)). Until a release has filled it, set `server_motd_package_src` to a wheel path.
 

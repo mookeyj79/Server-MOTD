@@ -93,7 +93,7 @@ jobs:
       contents: write
       pull-requests: write
     env:
-      # Role lockfile (ticket #29); a placeholder until the first release fills it.
+      # Role lockfile; a placeholder until the first release fills it.
       LOCKFILE: ansible/roles/server_motd/files/requirements.lock
     steps:
       - uses: actions/checkout@v4
@@ -117,10 +117,12 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           python -m pip install pip-tools
-          echo "server-motd==${version}" > requirements.in
+          # The role always installs the figlet banner (MOTD layout decision).
+          echo "server-motd[figlet]==${version}" > requirements.in
           # PyPI's index can lag a few minutes behind the upload.
+          # --strip-extras keeps the pin as "server-motd==", which the role checks for.
           for attempt in 1 2 3 4 5 6; do
-            if pip-compile --quiet --generate-hashes --allow-unsafe \
+            if pip-compile --quiet --generate-hashes --allow-unsafe --strip-extras \
                 --output-file "$LOCKFILE" requirements.in; then
               break
             fi
@@ -144,6 +146,7 @@ jobs:
           git add "$LOCKFILE"
           git commit -m "Update role lockfile for ${GITHUB_REF_NAME}"
           git push origin "$branch"
-          gh pr create --base master --head "$branch" \
+          # Explicit --repo: this repo is a fork, and gh would otherwise target the parent.
+          gh pr create --repo "$GITHUB_REPOSITORY" --base master --head "$branch" \
             --title "Update role lockfile for ${GITHUB_REF_NAME}" \
             --body "Automated: refreshes the hash-pinned lockfile used by the Ansible role to install server-motd ${GITHUB_REF_NAME#v} from PyPI."

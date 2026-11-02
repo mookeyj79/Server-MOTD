@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -15,7 +16,7 @@ from types import ModuleType
 import pytest
 
 ROLE = Path(__file__).parent.parent / "ansible" / "roles" / "server_motd"
-HOOK = ROLE / "files" / "50-server-motd"
+HOOK = ROLE / "templates" / "50-server-motd.j2"
 
 
 def _load_filter() -> ModuleType:
@@ -84,8 +85,16 @@ def _run_hook(script: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _hook_for(tmp_path: Path, venv: Path) -> Path:
-    text = HOOK.read_text().replace("/opt/server-motd/venv", str(venv))
+def _hook_for(tmp_path: Path, venv: Path, config_dir: str = "/etc/server-motd") -> Path:
+    """Render the hook template the way Ansible would for these role variables."""
+    text = HOOK.read_text()
+    for var, value in {
+        "server_motd_venv": str(venv),
+        "server_motd_user": "server-motd",
+        "server_motd_config_dir": config_dir,
+    }.items():
+        text = text.replace("{{ " + var + " | quote }}", shlex.quote(value))
+    assert "{{" not in text and "{%" not in text, "unrendered template syntax"
     script = tmp_path / "hook"
     script.write_text(text)
     script.chmod(script.stat().st_mode | stat.S_IXUSR)
@@ -98,24 +107,42 @@ def test_hook_exits_zero_silently_when_venv_missing(tmp_path: Path) -> None:
     assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
 
 
-@posix_only
-def test_hook_exits_zero_and_prints_nothing_when_binary_fails(tmp_path: Path) -> None:
+def _fake_venv(tmp_path: Path, script: str) -> Path:
+    """A venv whose server-motd binary is the given shell script."""
     binary = tmp_path / "venv" / "bin" / "server-motd"
     binary.parent.mkdir(parents=True)
-    binary.write_text("#!/bin/sh\necho partial\nexit 3\n")
+    binary.write_text(script)
     binary.chmod(0o755)
-    result = _run_hook(_hook_for(tmp_path, tmp_path / "venv"))
+    return tmp_path / "venv"
+
+
+ECHO_ARGS = '#!/bin/sh\necho "args: $*"\n'
+not_root = pytest.mark.skipif(
+    getattr(os, "geteuid", lambda: 1)() == 0,
+    reason="as root the hook would need the server-motd user",
+)
+
+
+@posix_only
+def test_hook_exits_zero_and_prints_nothing_when_binary_fails(tmp_path: Path) -> None:
+    venv = _fake_venv(tmp_path, "#!/bin/sh\necho partial\nexit 3\n")
+    result = _run_hook(_hook_for(tmp_path, venv))
     assert (result.returncode, result.stdout) == (0, "")
 
 
 @posix_only
-def test_hook_passes_width_and_color_flags(tmp_path: Path) -> None:
-    binary = tmp_path / "venv" / "bin" / "server-motd"
-    binary.parent.mkdir(parents=True)
-    binary.write_text('#!/bin/sh\necho "args: $*"\n')
-    binary.chmod(0o755)
-    if getattr(os, "geteuid", lambda: 1)() == 0:
-        pytest.skip("root would require the server-motd user")
-    result = _run_hook(_hook_for(tmp_path, tmp_path / "venv"))
+@not_root
+def test_hook_passes_config_width_and_color_flags(tmp_path: Path) -> None:
+    result = _run_hook(_hook_for(tmp_path, _fake_venv(tmp_path, ECHO_ARGS)))
     assert result.returncode == 0
-    assert result.stdout == "args: --width 80 --color always\n"
+    assert result.stdout == (
+        "args: --config /etc/server-motd/config.toml --width 80 --color always\n"
+    )
+
+
+@posix_only
+@not_root
+def test_hook_uses_the_role_config_dir(tmp_path: Path) -> None:
+    venv = _fake_venv(tmp_path, ECHO_ARGS)
+    result = _run_hook(_hook_for(tmp_path, venv, "/srv/my motd"))
+    assert result.stdout.startswith("args: --config /srv/my motd/config.toml ")

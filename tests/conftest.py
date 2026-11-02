@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import NamedTuple
@@ -21,6 +22,15 @@ class Run(NamedTuple):
     code: int
     out: str
     err: str
+
+
+@pytest.fixture(autouse=True)
+def no_pyfiglet(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Hide pyfiglet so golden output is the same with or without the extra.
+
+    Tests that want a banner install a fake with monkeypatch.setitem.
+    """
+    monkeypatch.setitem(sys.modules, "pyfiglet", None)
 
 
 @pytest.fixture
