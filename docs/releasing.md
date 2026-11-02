@@ -35,9 +35,13 @@ Do these in order, before the first tag.
 
 ## Post-release lockfile PR
 
-The Ansible role installs the package from a hash-pinned lockfile. Assumed
-location: `ansible/roles/server_motd/files/requirements.lock` (a placeholder until the first release, which the lockfile PR then fills; the role refuses to install from a lockfile without a `server-motd==` pin).
+The Ansible role installs the package from a hash-pinned lockfile,
+`ansible/roles/server_motd/files/requirements.lock` (a placeholder until the
+first release, which the lockfile PR then fills; the role refuses to install
+from a lockfile without a `server-motd==` pin).
 After publishing, the `lockfile-pr` job regenerates it with
-`pip-compile --generate-hashes` for `server-motd==<version>` and opens a PR
-against `master`. If the file does not exist yet the job logs a notice and does
-nothing; if #29 uses a different path, update `LOCKFILE` in `release.yml`.
+`pip-compile --generate-hashes --strip-extras` for
+`server-motd[figlet]==<version>` (the role always installs the figlet banner)
+and opens a PR against `master` in this repository (`--repo` is explicit
+because the repo is a fork). If the file does not exist, the job logs a notice
+and does nothing.

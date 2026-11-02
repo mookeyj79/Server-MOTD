@@ -72,9 +72,9 @@ jobs:
             -e "ansible_python_interpreter=$(command -v python3)" \
             -e "server_motd_package_src=$wheel" | tee run2.log
           grep -E "changed=0 .*failed=0" run2.log
-      - name: Config is valid and private
+      - name: Config is valid and read-only to the service user
         run: |
-          sudo stat -c '%U %a' /etc/server-motd/config.toml | grep -x 'server-motd 600'
+          sudo stat -c '%U %G %a' /etc/server-motd/config.toml | grep -x 'root server-motd 640'
           sudo -u server-motd /opt/server-motd/venv/bin/server-motd check
       - name: MOTD renders through the hook
         run: |
@@ -96,3 +96,32 @@ jobs:
           test ! -e /opt/server-motd
           test ! -e /etc/server-motd
           ! getent passwd server-motd
+
+  debian-hook-custom-paths:
+    name: role and hook render (non-default paths)
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+      ANSIBLE_STDOUT_CALLBACK: default
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build ansible-core
+      - run: python -m build --wheel
+      - name: Apply the role with a custom user, base dir and config dir
+        run: |
+          wheel=$(ls "$PWD"/dist/*.whl)
+          ansible-playbook -i localhost, -c local -b ansible/ci-present.yml             -e "ansible_python_interpreter=$(command -v python3)"             -e "server_motd_package_src=$wheel"             -e server_motd_user=motd-ci             -e server_motd_base_dir=/srv/motd-ci             -e server_motd_config_dir=/etc/motd-ci
+      - name: Nothing landed at the default paths
+        run: |
+          test ! -e /opt/server-motd
+          test ! -e /etc/server-motd
+          ! getent passwd server-motd
+          sudo stat -c '%U %G %a' /etc/motd-ci/config.toml | grep -x 'root motd-ci 640'
+      - name: MOTD renders through the hook
+        run: |
+          sudo /etc/update-motd.d/50-server-motd | tee motd.txt
+          grep -q "ci-host" motd.txt
+          sudo env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d | grep -q "ci-host"

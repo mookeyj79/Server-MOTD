@@ -43,7 +43,6 @@ class Stub:
 @pytest.fixture(autouse=True)
 def stub_kind(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(REGISTRY, "stub", Stub)
-    monkeypatch.setitem(sys.modules, "pyfiglet", None)  # absent unless a test fakes it
 
 
 CONFIG = 'title = "media-box"\n' + "".join(
