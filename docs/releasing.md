@@ -42,3 +42,15 @@ After publishing, the `lockfile-pr` job regenerates it with
 and opens a PR against `master` in this repository (`--repo` is explicit
 because the repo is a fork). If the file does not exist, the job logs a notice
 and does nothing.
+
+PyPI's index can take a few minutes to list a new version, so the job retries
+`pip-compile` for up to about 10 minutes, bypassing pip's cache (PyPI's index
+pages are cacheable for 10 minutes, which would otherwise make every retry
+see the same stale page). If it still fails, re-run just that job once the
+version shows on PyPI: `gh run rerun <run-id> --failed` (publishing is not
+repeated).
+
+GitHub does not start `pull_request` workflows for a PR opened with the
+workflow's own token, so the job then dispatches `ci.yml` on the lockfile
+branch (`workflow_dispatch` runs are the exception). Its checks show on the
+PR as usual; wait for them before merging.

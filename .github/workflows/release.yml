@@ -92,6 +92,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write # dispatch CI on the lockfile branch
     env:
       # Role lockfile; a placeholder until the first release fills it.
       LOCKFILE: ansible/roles/server_motd/files/requirements.lock
@@ -119,14 +120,17 @@ jobs:
           python -m pip install pip-tools
           # The role always installs the figlet banner (MOTD layout decision).
           echo "server-motd[figlet]==${version}" > requirements.in
-          # PyPI's index can lag a few minutes behind the upload.
+          # PyPI's index can lag behind the upload. Its index pages are served
+          # with max-age=600, so without --no-cache-dir pip rereads its stale
+          # cached copy and every retry fails the same way (v0.1.1 did).
           # --strip-extras keeps the pin as "server-motd==", which the role checks for.
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in $(seq 1 20); do  # up to ~10 minutes
             if pip-compile --quiet --generate-hashes --allow-unsafe --strip-extras \
+                --pip-args "--no-cache-dir" \
                 --output-file "$LOCKFILE" requirements.in; then
               break
             fi
-            [ "$attempt" = 6 ] && exit 1
+            [ "$attempt" = 20 ] && exit 1
             sleep 30
           done
           rm requirements.in
@@ -150,3 +154,7 @@ jobs:
           gh pr create --repo "$GITHUB_REPOSITORY" --base master --head "$branch" \
             --title "Update role lockfile for ${GITHUB_REF_NAME}" \
             --body "Automated: refreshes the hash-pinned lockfile used by the Ansible role to install server-motd ${GITHUB_REF_NAME#v} from PyPI."
+          # Events made with GITHUB_TOKEN don't start pull_request CI, but a
+          # workflow_dispatch always creates a run; its checks land on the
+          # branch head, so they show on the PR.
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
