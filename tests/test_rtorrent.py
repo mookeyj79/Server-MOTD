@@ -55,7 +55,7 @@ def test_unix_socket(
 def test_unreachable_is_unavailable(run_cli: RunCli, write_config: WriteConfig) -> None:
     r = show(run_cli, write_config(HEAD + cfg_for(closed_scgi_address())))
     assert r.code == 0
-    assert "rtorrent" in r.out
+    assert "rTorrent" in r.out
     assert "UNAVAILABLE" in r.out
 
 

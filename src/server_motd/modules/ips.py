@@ -8,15 +8,14 @@ import socket
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row
+from server_motd.model import Deadline, Result, Row
 
 
 class Ips:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "IPs"
-        spec.done()
+        pass  # no options
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         rows = []
         for iface, addrs in sorted(psutil.net_if_addrs().items()):
             for addr in addrs:
@@ -28,4 +27,4 @@ class Ips:
                 rows.append(Row(iface, str(ip)))
         if not rows:
             raise RuntimeError("no non-loopback addresses found")
-        return Result(self.title, rows)
+        return Result(rows)

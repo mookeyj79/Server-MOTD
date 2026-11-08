@@ -51,14 +51,19 @@ def test_filter_output_loads_with_the_real_config_loader(tmp_path: Path) -> None
 
     path = tmp_path / "config.toml"
     path.write_text(_render({"title": "t", "modules": [{"kind": "load"}]}))
-    entries = config.load(path)
-    assert [getattr(e, "kind", None) for e in entries] == ["load"]
-    assert config.load_settings(path).title == "t"
+    loaded = config.load(path)
+    assert [getattr(e, "kind", None) for e in loaded.entries] == ["load"]
+    assert loaded.settings.title == "t"
 
 
 def test_filter_rejects_non_dict() -> None:
     with pytest.raises(TypeError):
         _render(["x"])
+
+
+def test_filter_rejects_none_inside_a_list() -> None:
+    with pytest.raises(TypeError, match="no null"):
+        _render({"modules": [{"kind": "disks", "paths": ["/", None]}]})
 
 
 def test_filter_str_like_values_are_rendered_as_strings() -> None:

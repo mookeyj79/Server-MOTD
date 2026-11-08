@@ -8,40 +8,38 @@ parameter: `mode=queue` (speed, jobs, remaining) and `mode=server_stats`
 
 from __future__ import annotations
 
-import urllib.parse
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row, Status
-from server_motd.modules import _http
+from server_motd.failure import ApiError, BadResponse
+from server_motd.model import Deadline, Result, Row
 from server_motd.modules._common import human_bytes
+from server_motd.modules._http import Http, take_url_and_key
+
+
+def _unwrap(data: Any) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        raise BadResponse("not a JSON object")
+    if data.get("status") is False:
+        raise ApiError(str(data.get("error") or ""))
+    return data
 
 
 class Sabnzbd:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "SABnzbd"
-        url, self.key = _http.take_url_and_key(spec)
-        self.base = url + "/api"
-        spec.done()
-
-    def _get(self, mode: str) -> dict[str, Any]:
-        query = urllib.parse.urlencode(
-            {"mode": mode, "output": "json", "apikey": self.key}
+        url, key = take_url_and_key(spec)
+        self.http = Http(
+            url + "/api", params={"output": "json", "apikey": key}, unwrap=_unwrap
         )
-        data = _http.get_json(f"{self.base}?{query}")
-        if not isinstance(data, dict):
-            raise RuntimeError("bad response: not a JSON object")
-        if data.get("status") is False:
-            raise RuntimeError(str(data.get("error") or "API error"))
-        return data
 
-    def fetch(self) -> Result:
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            queue = pool.submit(self._get, "queue")
-            stats = pool.submit(self._get, "server_stats")
-            q = queue.result()["queue"]
-            total = int(stats.result()["total"])
+    def fetch(self, deadline: Deadline) -> Result:
+        s = self.http.session(deadline)
+        queue, stats = s.gather(
+            lambda: s.get_json(mode="queue"),
+            lambda: s.get_json(mode="server_stats"),
+        )
+        q = queue["queue"]
+        total = int(stats["total"])
         speed = float(q["kbpersec"]) * 1024
         jobs = int(q["noofslots_total"])
         if jobs:
@@ -51,9 +49,10 @@ class Sabnzbd:
             queue_value = "empty"
         if q.get("paused"):
             queue_value += " (paused)"
-        rows = [
-            Row("Speed", f"{human_bytes(speed)}/s"),
-            Row("Queue", queue_value),
-            Row("Total", human_bytes(total)),
-        ]
-        return Result(self.title, rows, Status.INFO)
+        return Result(
+            [
+                Row("Speed", f"{human_bytes(speed)}/s"),
+                Row("Queue", queue_value),
+                Row("Total", human_bytes(total)),
+            ]
+        )

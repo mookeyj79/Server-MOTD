@@ -1,7 +1,8 @@
-"""Concurrent module runner.
+"""Concurrent module runner, internal to `report`.
 
-Modules run in daemon threads; a module that raises or overruns its timeout
-becomes an UNAVAILABLE result.
+Each module runs in a daemon thread and is handed its deadline: MODULE_TIMEOUT
+from its own start, capped by TOTAL_TIMEOUT for the whole run. A module that
+raises, or is still running at its deadline, becomes a `Failed`.
 """
 
 from __future__ import annotations
@@ -10,47 +11,39 @@ import threading
 import time
 import traceback
 from collections.abc import Sequence
+from dataclasses import dataclass
 
-from server_motd.model import Module, Result, Row, Status
+from server_motd.failure import Failure, FailureKind, classify
+from server_motd.model import Deadline, Module, Result
 
 MODULE_TIMEOUT = 3.0
 TOTAL_TIMEOUT = 6.0
 
 
-def unavailable(title: str, reason: str) -> Result:
-    row = Row("Status", f"UNAVAILABLE: {reason}", Status.UNAVAILABLE)
-    return Result(title, [row], Status.UNAVAILABLE)
+@dataclass(frozen=True)
+class Failed:
+    failure: Failure
+    traceback: str | None = None
 
 
-def run(
-    modules: Sequence[tuple[str, Module]], verbose_log: list[str] | None = None
-) -> list[Result]:
-    """Fetch all modules concurrently; results keep the input order.
+def run(modules: Sequence[Module]) -> list[Result | Failed]:
+    """Fetch all modules concurrently; results keep the input order."""
+    slots: list[Result | Failed | None] = [None] * len(modules)
 
-    Each item is (fallback title, module). `verbose_log` collects tracebacks.
-    """
-    slots: list[Result | None] = [None] * len(modules)
-
-    def work(i: int, title: str, module: Module) -> None:
+    def work(i: int, module: Module, deadline: Deadline) -> None:
         try:
-            slots[i] = module.fetch()
+            slots[i] = module.fetch(deadline)
         except Exception as exc:
-            if verbose_log is not None:
-                verbose_log.append(f"{title}:\n{traceback.format_exc()}")
-            slots[i] = unavailable(title, str(exc) or type(exc).__name__)
+            slots[i] = Failed(classify(exc), traceback.format_exc())
 
-    run_start = time.monotonic()
-    threads: list[tuple[threading.Thread, float]] = []
-    for i, (title, module) in enumerate(modules):
-        t = threading.Thread(target=work, args=(i, title, module), daemon=True)
+    run_end = time.monotonic() + TOTAL_TIMEOUT
+    threads: list[tuple[threading.Thread, Deadline]] = []
+    for i, module in enumerate(modules):
+        deadline = Deadline(min(time.monotonic() + MODULE_TIMEOUT, run_end))
+        t = threading.Thread(target=work, args=(i, module, deadline), daemon=True)
         t.start()
-        # Each module gets MODULE_TIMEOUT from its own start, capped by the
-        # TOTAL_TIMEOUT for the whole run.
-        deadline = min(time.monotonic() + MODULE_TIMEOUT, run_start + TOTAL_TIMEOUT)
         threads.append((t, deadline))
     for t, deadline in threads:
-        t.join(max(0.0, deadline - time.monotonic()))
-    return [
-        slot if slot is not None else unavailable(modules[i][0], "timed out")
-        for i, slot in enumerate(slots)
-    ]
+        t.join(deadline.remaining())
+    timed_out = Failed(Failure(FailureKind.TIMED_OUT))
+    return [slot if slot is not None else timed_out for slot in slots]

@@ -23,7 +23,7 @@ def test_check_reports_pass_per_module(
     path = write_config(GOOD)
     r = run_cli("--config", str(path), "check")
     assert r.code == 0
-    assert "ok" in r.out and "uptime" in r.out
+    assert "ok" in r.out and "Uptime" in r.out
 
 
 def test_check_after_subcommand_accepts_options(
@@ -40,7 +40,7 @@ def test_check_fails_on_invalid_module_config(
     path = write_config(GOOD + '[[modules]]\nkind = "nope"\n')
     r = run_cli("--config", str(path), "check")
     assert r.code != 0
-    assert "uptime" in r.out
+    assert "Uptime" in r.out
     assert "FAIL" in r.out and "unknown kind 'nope'" in r.out
 
 
@@ -131,3 +131,37 @@ def test_explicit_config_overrides_discovery(
     path = write_config(GOOD)
     r = run_cli("--config", str(path), "check")
     assert r.code == 0
+
+
+def test_check_fails_on_bad_title_that_would_blank_the_motd(
+    run_cli: RunCli, write_config: WriteConfig
+) -> None:
+    path = write_config("title = 5\n" + GOOD)
+    r = run_cli("--config", str(path), "check")
+    assert r.code == 1
+    assert "'title' must be a string" in r.err
+
+
+def test_check_fails_on_unknown_box_style(
+    run_cli: RunCli, write_config: WriteConfig
+) -> None:
+    path = write_config('box = "fancy"\n' + GOOD)
+    r = run_cli("--config", str(path), "check", "--no-probe")
+    assert r.code == 1
+    assert "FAIL  settings: unknown box style 'fancy'" in r.out
+
+
+def test_check_no_probe_validates_without_fetching(
+    run_cli: RunCli, write_config: WriteConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def boom() -> float:
+        raise RuntimeError("probed")
+
+    monkeypatch.setattr("psutil.boot_time", boom)
+    good = run_cli("--config", str(write_config(GOOD)), "check", "--no-probe")
+    assert good.code == 0 and "ok    Uptime" in good.out
+    bad = run_cli(
+        "--config", str(write_config(GOOD + "bogus = 1\n")), "check", "--no-probe"
+    )
+    assert bad.code == 1
+    assert "FAIL  Uptime: invalid config: unknown option(s): bogus" in bad.out

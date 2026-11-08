@@ -10,21 +10,18 @@ import sys
 import psutil
 
 from server_motd.config import ConfigError, ModuleSpec
-from server_motd.model import Result, Row
-from server_motd.modules._common import Thresholds
+from server_motd.model import Deadline, Result, Row
 
 
 class Load:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "Load"
-        self.limits = Thresholds(spec)
+        self.limits = spec.take_thresholds()
         if sys.platform == "win32":
             raise ConfigError("load is not available on Windows; use the cpu module")
-        spec.done()
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         one, five, fifteen = psutil.getloadavg()
         per_core = one / (psutil.cpu_count() or 1)
         status = self.limits.status(per_core)
         value = f"{one:.2f} {five:.2f} {fifteen:.2f}"
-        return Result(self.title, [Row("Load", value, status)], status)
+        return Result([Row("Load", value, status)], status)

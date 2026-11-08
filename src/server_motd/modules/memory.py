@@ -5,17 +5,15 @@ from __future__ import annotations
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row, Status
-from server_motd.modules._common import Thresholds, human_bytes, worst
+from server_motd.model import Deadline, Result, Row, Status, worst
+from server_motd.modules._common import human_bytes
 
 
 class Memory:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "Memory"
-        self.limits = Thresholds(spec)
-        spec.done()
+        self.limits = spec.take_thresholds()
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         mem = psutil.virtual_memory()
         rows = [
             Row(
@@ -35,4 +33,4 @@ class Memory:
                     Status.INFO,
                 )
             )
-        return Result(self.title, rows, worst(rows))
+        return Result(rows, worst(rows))

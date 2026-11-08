@@ -8,59 +8,53 @@ Options: `url` and `api_key` (required; `api_key` also accepts `${ENV}` or
 
 from __future__ import annotations
 
-import contextlib
-import urllib.parse
-import urllib.request
-from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row, Status
-from server_motd.modules import _http
-from server_motd.modules._common import Thresholds, worst
+from server_motd.model import Deadline, Result, Row, Status, worst
+from server_motd.modules._http import Http, take_url_and_key
 
 
 class Servarr:
-    default_title = "Servarr"
     api_prefix = "/api/v3"
     calendar_params: dict[str, str] = {}
 
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or self.default_title
-        url, self.key = _http.take_url_and_key(spec)
-        self.base = url + self.api_prefix
-        self.thresholds = Thresholds(spec)
+        url, key = take_url_and_key(spec)
+        self.http = Http(url + self.api_prefix, headers={"X-Api-Key": key})
+        self.thresholds = spec.take_thresholds()
         self.days: int = spec.take("calendar_days", int, 7)
-        spec.done()
 
-    def _get(self, path: str, **params: str) -> Any:
-        url = f"{self.base}{path}"
-        if params:
-            url += "?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"X-Api-Key": self.key})
-        return _http.get_json(req)
-
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         now = datetime.now(UTC)
         window = {
             "start": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "end": (now + timedelta(days=self.days)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             **self.calendar_params,
         }
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            queue = pool.submit(self._get, "/queue/status")
-            missing = pool.submit(self._get, "/wanted/missing", pageSize="1")
-            health = pool.submit(self._get, "/health")
-            calendar = pool.submit(self._get, "/calendar", **window)
-            rows = [
-                self._queue_row(queue.result()),
-                self._missing_row(missing.result()),
-                self._health_row(health.result()),
-            ]
-            with contextlib.suppress(Exception):  # the calendar is optional
-                rows.append(Row("Upcoming", str(len(calendar.result()))))
-        return Result(self.title, rows, worst(rows))
+        s = self.http.session(deadline)
+
+        def calendar() -> Any:
+            try:
+                return s.get_json("/calendar", **window)
+            except Exception:  # the calendar is optional
+                return None
+
+        queue, missing, health, upcoming = s.gather(
+            lambda: s.get_json("/queue/status"),
+            lambda: s.get_json("/wanted/missing", pageSize="1"),
+            lambda: s.get_json("/health"),
+            calendar,
+        )
+        rows = [
+            self._queue_row(queue),
+            self._missing_row(missing),
+            self._health_row(health),
+        ]
+        if isinstance(upcoming, list):
+            rows.append(Row("Upcoming", str(len(upcoming))))
+        return Result(rows, worst(rows))
 
     @staticmethod
     def _queue_row(data: dict[str, Any]) -> Row:
@@ -73,10 +67,8 @@ class Servarr:
 
     def _missing_row(self, data: dict[str, Any]) -> Row:
         count = int(data["totalRecords"])
-        status = self.thresholds.status(count)
-        if status is Status.OK:  # Missing stays neutral when no threshold is hit
-            status = Status.INFO
-        return Row("Missing", str(count), status)
+        # Missing stays neutral when no threshold is hit.
+        return Row("Missing", str(count), self.thresholds.status(count, Status.INFO))
 
     @staticmethod
     def _health_row(data: list[dict[str, Any]]) -> Row:
@@ -89,15 +81,13 @@ class Servarr:
 
 
 class Sonarr(Servarr):
-    default_title = "Sonarr"
     calendar_params = {"includeSeries": "true"}
 
 
 class Radarr(Servarr):
-    default_title = "Radarr"
+    pass
 
 
 class Lidarr(Servarr):
-    default_title = "Lidarr"
     api_prefix = "/api/v1"
     calendar_params = {"includeArtist": "true"}

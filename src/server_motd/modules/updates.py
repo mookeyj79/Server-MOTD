@@ -11,8 +11,8 @@ import re
 from pathlib import Path
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row, Status
-from server_motd.modules._common import worst
+from server_motd.failure import ModuleError
+from server_motd.model import Deadline, Result, Row, Status, worst
 
 UPDATES_FILE = "/var/lib/update-notifier/updates-available"
 REBOOT_FILE = "/var/run/reboot-required"
@@ -25,16 +25,14 @@ def _count(text: str, pattern: str) -> int | None:
 
 class Updates:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "Updates"
         self.updates_file = Path(spec.take("updates_file", str, UPDATES_FILE))
         self.reboot_file = Path(spec.take("reboot_file", str, REBOOT_FILE))
-        spec.done()
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         text = self.updates_file.read_text(encoding="utf-8")
         pending = _count(text, r"(\d+) updates? can be")
         if pending is None:
-            raise ValueError(f"cannot parse {self.updates_file}")
+            raise ModuleError(f"cannot parse {self.updates_file}")
         security = _count(text, r"(\d+) of these updates are") or 0
         rows = [
             Row(
@@ -53,4 +51,4 @@ class Updates:
                 Status.WARN if reboot else Status.OK,
             )
         )
-        return Result(self.title, rows, worst(rows))
+        return Result(rows, worst(rows))

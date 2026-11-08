@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row, Status
-from server_motd.modules import REGISTRY
+from server_motd.model import Deadline, Result, Row, Status
+from server_motd.modules import REGISTRY, Kind
 from tests.conftest import Run
 
 RunCli = Callable[..., Run]
@@ -24,12 +24,10 @@ class Stub:
     """Fixed content: one row per status, one overlong value."""
 
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "Stub"
-        spec.done()
+        pass
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         return Result(
-            self.title,
             [
                 Row("Info", "plain"),
                 Row("Fine", "all good", Status.OK),
@@ -42,7 +40,7 @@ class Stub:
 
 @pytest.fixture(autouse=True)
 def stub_kind(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setitem(REGISTRY, "stub", Stub)
+    monkeypatch.setitem(REGISTRY, "stub", Kind(Stub, "Stub"))
 
 
 CONFIG = 'title = "media-box"\n' + "".join(

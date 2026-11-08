@@ -7,7 +7,7 @@ import time
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row, Status
+from server_motd.model import Deadline, Result, Row, Status
 
 
 def format_duration(seconds: float) -> str:
@@ -26,13 +26,11 @@ def format_duration(seconds: float) -> str:
 
 class Uptime:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "Uptime"
-        spec.done()
+        pass  # no options
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         seconds = time.time() - psutil.boot_time()
         return Result(
-            self.title,
             [Row("Uptime", format_duration(seconds), Status.INFO)],
             Status.INFO,
         )
