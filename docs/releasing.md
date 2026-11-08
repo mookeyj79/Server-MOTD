@@ -54,3 +54,9 @@ GitHub does not start `pull_request` workflows for a PR opened with the
 workflow's own token, so the job then dispatches `ci.yml` on the lockfile
 branch (`workflow_dispatch` runs are the exception). Its checks show on the
 PR as usual; wait for them before merging.
+
+CI's `role from lockfile` job applies the role the way real hosts get it: from
+the pinned release on PyPI, not a fresh wheel. It goes red when the role on
+`master` needs something the pinned release lacks (for example, a new `check`
+flag in the config `validate:`). That is a real break for anyone running the
+role, so the fix is a release and its lockfile PR, not a change to the job.

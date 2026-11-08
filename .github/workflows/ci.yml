@@ -45,6 +45,48 @@ jobs:
       - run: python -m pip install ansible-lint
       - run: ansible-lint
 
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
+
+  role-from-lockfile:
+    # The other role jobs install a freshly built wheel. This one installs what
+    # real hosts get: the released version pinned in requirements.lock. Red here
+    # means the role on this commit needs something the pinned release lacks
+    # (e.g. a new `check` flag in validate:); release, then merge the lockfile PR.
+    name: role from lockfile (released package)
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+      ANSIBLE_STDOUT_CALLBACK: default
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ansible-core
+      - name: Apply the role from the lockfile
+        run: |
+          ansible-playbook -i localhost, -c local -b ansible/ci-present.yml \
+            -e "ansible_python_interpreter=$(command -v python3)"
+      - name: Installed version matches the lockfile pin
+        run: |
+          pin=$(grep -oP '^server-motd==\K[^ ]+' ansible/roles/server_motd/files/requirements.lock)
+          got=$(sudo /opt/server-motd/venv/bin/python -c "import importlib.metadata as m; print(m.version('server-motd'))")
+          echo "pinned $pin, installed $got"
+          test "$pin" = "$got"
+      - name: Config passes the released check
+        run: sudo -u server-motd /opt/server-motd/venv/bin/server-motd check
+      - name: MOTD renders through the hook
+        # The lockfile installs the figlet extra, so the title is a banner;
+        # match a panel heading instead.
+        run: sudo /etc/update-motd.d/50-server-motd | tee motd.txt | grep -q "Uptime"
+
   debian-hook:
     name: role and hook render
     runs-on: ubuntu-latest
