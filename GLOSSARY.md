@@ -43,3 +43,19 @@ _Avoid_: Level, severity, colour
 **Profile block**:
 The marked span `install-profile` writes into a PowerShell profile to run the MOTD at login; everything outside the markers belongs to the user.
 _Avoid_: Snippet, hook
+
+**Report**:
+What one run produces from a config: the banner title, the box style, and one outcome per enabled instance, in config order. The MOTD and `check` are two presentations of the same report.
+_Avoid_: Run result, summary
+
+**Outcome**:
+What one instance came to in a report: its title, the result to show, and the failure if it was unavailable.
+_Avoid_: Slot, entry
+
+**Failure kind**:
+Why a module is unavailable: invalid config, unreachable, auth failed, API error, bad response, timed out (or a plain error). The reason shown after `UNAVAILABLE:` always starts with it.
+_Avoid_: Error type, error code
+
+**Deadline**:
+The moment by which a module's fetch must finish; every request it makes takes its timeout from the time left.
+_Avoid_: Timeout (for the whole budget), TTL

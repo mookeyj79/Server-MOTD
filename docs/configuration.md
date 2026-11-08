@@ -72,6 +72,6 @@ api_key = "${SONARR_4K_API_KEY}"
 
 ```text
 server-motd [--config FILE] [--width N] [--color auto|always|never] [--verbose]
-server-motd check [--config FILE] [--verbose]
+server-motd check [--config FILE] [--verbose] [--no-probe]
 server-motd install-profile | uninstall-profile
 ```

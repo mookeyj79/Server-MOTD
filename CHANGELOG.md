@@ -4,6 +4,14 @@ Hand-written. Versions follow `pyproject.toml` and stay 0.x until the v1 scope
 ships. Each release needs a `## [x.y.z]` heading here; the release workflow
 fails without one and uses the section as the GitHub Release notes.
 
+## [Unreleased]
+
+- `check` now validates the top-level `title` and `box` settings, so it no longer passes a config whose MOTD would print nothing. New `check --no-probe` validates without contacting anything; the Ansible role uses it to validate `config.toml` before writing it.
+- Unavailable reasons are one consistent set: `invalid config`, `unreachable`, `auth failed`, `API error`, `bad response` and `timed out`. A malformed service reply shows `bad response: missing '<field>'` instead of a bare field name, and timeouts read `timed out` for every module.
+- A module's title no longer changes when it is unavailable (`SABnzbd`, not `sabnzbd`), and a `name` is always used for named Instances.
+- A module's requests share its 3 s budget: each request's timeout is the time left, rather than a fixed 2.5 s (2 s for rTorrent) per request. A module that overruns no longer delays process exit.
+- The Ansible TOML filter rejects `None` inside a list instead of writing the string `"None"`.
+
 ## [0.1.0]
 
 First release of `server-motd`, a from-scratch rewrite of the Cloudbox-MOTD

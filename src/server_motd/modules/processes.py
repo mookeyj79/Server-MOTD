@@ -5,17 +5,14 @@ from __future__ import annotations
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Result, Row
-from server_motd.modules._common import Thresholds
+from server_motd.model import Deadline, Result, Row
 
 
 class Processes:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.title = spec.name or "Processes"
-        self.limits = Thresholds(spec)
-        spec.done()
+        self.limits = spec.take_thresholds()
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         count = len(psutil.pids())
         status = self.limits.status(count)
-        return Result(self.title, [Row("Processes", str(count), status)], status)
+        return Result([Row("Processes", str(count), status)], status)

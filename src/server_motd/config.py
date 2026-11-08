@@ -2,10 +2,10 @@
 
 Config shape: an ordered `[[modules]]` array. Each entry has `kind`, optional
 `name`, `enabled` (default true) and any kind-specific keys, including
-`warn`/`crit`. Those are left in `ModuleSpec.options`; a module consumes what
-it supports with the `take_*` helpers and then calls `done()`, which rejects
-any key left over. Errors are raised as `ConfigError` and reported only for
-the module they belong to.
+`warn`/`crit`. Those are left in `ModuleSpec.options`; a module's constructor
+consumes what it supports with the `take*` helpers, and the pipeline then
+calls `done()`, which rejects any key left over. Errors are raised as
+`ConfigError` and reported only for the module they belong to.
 """
 
 from __future__ import annotations
@@ -17,6 +17,8 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from server_motd.model import Thresholds
 
 
 class ConfigError(Exception):
@@ -56,6 +58,21 @@ class ModuleSpec:
         if value is None:
             return None
         return _expand_env(value, key)
+
+    def take_thresholds(self) -> Thresholds:
+        """Take the optional `warn` / `crit` limits."""
+        warn: float | None = self.take("warn", float)
+        crit: float | None = self.take("crit", float)
+        if warn is not None and crit is not None and warn > crit:
+            raise ConfigError("'warn' must not exceed 'crit'")
+        return Thresholds(warn, crit)
+
+    def take_url(self) -> str:
+        """Take the required `url` option, trailing slash stripped."""
+        url = self.take("url", str)
+        if not url:
+            raise ConfigError("'url' is required")
+        return str(url).rstrip("/")
 
     def done(self) -> None:
         if self.options:
@@ -102,24 +119,28 @@ class Settings:
     box: str = "single"
 
 
-def load_settings(path: Path | None) -> Settings:
-    """Read the top-level keys; invalid values raise ConfigError."""
+@dataclass
+class Config:
+    settings: Settings
+    entries: list[ModuleSpec | BadEntry]
+
+
+def load(path: Path | None) -> Config:
+    """Find, read and parse the config once.
+
+    File-level problems (no file, bad TOML, bad top-level types) raise
+    ConfigError; a malformed module entry becomes a BadEntry instead.
+    """
     data = _read(path)
     title, box = data.get("title"), data.get("box", "single")
     if title is not None and not isinstance(title, str):
         raise ConfigError("'title' must be a string")
     if not isinstance(box, str):
         raise ConfigError("'box' must be a string")
-    return Settings(title, box)
-
-
-def load(path: Path | None) -> list[ModuleSpec | BadEntry]:
-    """Parse the config. Each entry is a ModuleSpec, or a BadEntry."""
-    data = _read(path)
     entries = data.get("modules", [])
     if not isinstance(entries, list):
         raise ConfigError("'modules' must be an array of tables")
-    return [_parse_entry(e) for e in entries]
+    return Config(Settings(title, box), [_parse_entry(e) for e in entries])
 
 
 def _read(path: Path | None) -> dict[str, Any]:

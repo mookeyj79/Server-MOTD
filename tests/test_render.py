@@ -10,8 +10,8 @@ import pytest
 
 from server_motd import runner
 from server_motd.config import ConfigError, ModuleSpec
-from server_motd.model import Result, Row
-from server_motd.modules import REGISTRY
+from server_motd.model import Deadline, Result, Row
+from server_motd.modules import REGISTRY, Kind
 from tests.conftest import Run
 
 RunCli = Callable[..., Run]
@@ -21,19 +21,19 @@ Golden = Callable[[str, str], None]
 
 class Boom:
     def __init__(self, spec: ModuleSpec) -> None:
-        spec.done()
+        pass
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         raise RuntimeError("kaboom")
 
 
 class Slow:
     def __init__(self, spec: ModuleSpec) -> None:
-        spec.done()
+        pass
 
-    def fetch(self) -> Result:
+    def fetch(self, deadline: Deadline) -> Result:
         time.sleep(5)
-        return Result("Slow")
+        return Result()
 
 
 class Secret:
@@ -41,20 +41,19 @@ class Secret:
 
     def __init__(self, spec: ModuleSpec) -> None:
         secret = spec.take_secret("token")
-        spec.done()
         if secret is None:
             raise ConfigError("'token' is required")
         self.secret = secret
 
-    def fetch(self) -> Result:
-        return Result("Secret", [Row("Token", self.secret)])
+    def fetch(self, deadline: Deadline) -> Result:
+        return Result([Row("Token", self.secret)])
 
 
 @pytest.fixture(autouse=True)
 def test_kinds(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setitem(REGISTRY, "boom", Boom)
-    monkeypatch.setitem(REGISTRY, "slow", Slow)
-    monkeypatch.setitem(REGISTRY, "secret", Secret)
+    monkeypatch.setitem(REGISTRY, "boom", Kind(Boom, "Boom"))
+    monkeypatch.setitem(REGISTRY, "slow", Kind(Slow, "Slow"))
+    monkeypatch.setitem(REGISTRY, "secret", Kind(Secret, "Secret"))
     monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.3)
 
 
@@ -78,7 +77,7 @@ def test_disabled_omitted_and_order_preserved(
     r = run_cli("--config", str(cfg), "--width", "40", "--color", "never")
     assert r.code == 0
     assert "Hidden" not in r.out
-    assert r.out.index("Secret") < r.out.index("Alpha")
+    assert r.out.index("Zed") < r.out.index("Alpha")
 
 
 def test_raising_and_slow_modules_are_unavailable(

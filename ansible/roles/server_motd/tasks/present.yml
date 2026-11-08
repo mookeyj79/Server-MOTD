@@ -97,6 +97,8 @@
     owner: root
     group: "{{ server_motd_user }}"
     mode: "0640"
+    # Offline: catches bad options before they reach a login, contacts nothing.
+    validate: "{{ server_motd_venv }}/bin/server-motd --config %s check --no-probe"
   no_log: true
 
 - name: Install the login hook

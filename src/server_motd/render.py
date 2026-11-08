@@ -140,7 +140,7 @@ def render(
     title: str = "",
     box: str = "single",
 ) -> str:
-    style = BOX_STYLES.get(box, BOX_STYLES["single"])
+    style = BOX_STYLES[box]
     width = max(width, 20)
     inner = width - 4
     if width >= TWO_COLUMN_MIN:

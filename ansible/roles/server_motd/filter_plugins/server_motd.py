@@ -20,6 +20,8 @@ def _string(value: str) -> str:
 
 
 def _scalar(value: Any) -> str:
+    if value is None:
+        raise TypeError("TOML has no null: drop the key or list item instead")
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, int):
