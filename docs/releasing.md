@@ -7,19 +7,16 @@ PyPI trusted publishing (OIDC, no tokens) through the GitHub environment `pypi`.
 
 Do these in order, before the first tag.
 
-1. **Rename the GitHub repo to `server-motd`** (Settings > General > Repository
-   name). Do this first: the PyPI trusted publisher is bound to the repository
-   name, so registering it before the rename would bind the wrong name.
-2. **Create the GitHub environment `pypi`** (Settings > Environments). Optionally
+1. **Create the GitHub environment `pypi`** (Settings > Environments). Optionally
    require a reviewer for manual approval of each publish.
-3. **Register a pending publisher on PyPI** (pypi.org > Your account > Publishing
+2. **Register a pending publisher on PyPI** (pypi.org > Your account > Publishing
    > Add a new pending publisher) with:
    - PyPI project name: `server-motd`
    - Owner: the GitHub owner of the repo
-   - Repository name: `server-motd`
+   - Repository name: `Server-MOTD` (the GitHub repo name; only the PyPI project is lowercase)
    - Workflow name: `release.yml`
    - Environment name: `pypi`
-4. Allow Actions to open pull requests (Settings > Actions > General > Workflow
+3. Allow Actions to open pull requests (Settings > Actions > General > Workflow
    permissions > "Allow GitHub Actions to create and approve pull requests"),
    needed by the post-release lockfile PR.
 

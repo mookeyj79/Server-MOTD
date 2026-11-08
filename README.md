@@ -59,7 +59,5 @@ Make it run at login:
 
 ## Credits
 
-This project is a fork of Cloudbox-MOTD, renamed and now independent; the v1 code is kept in the `legacy-v1` git tag.
-
 - Based on and inspired by https://github.com/ryanleonard1/PlexMOTD
 - Further enhanced by l3uddz https://github.com/Cloudbox/Cloudbox-MOTD
