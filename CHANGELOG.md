@@ -4,7 +4,7 @@ Hand-written. Versions follow `pyproject.toml` and stay 0.x until the v1 scope
 ships. Each release needs a `## [x.y.z]` heading here; the release workflow
 fails without one and uses the section as the GitHub Release notes.
 
-## [Unreleased]
+## [0.1.1]
 
 - `check` now validates the top-level `title` and `box` settings, so it no longer passes a config whose MOTD would print nothing. New `check --no-probe` validates without contacting anything; the Ansible role uses it to validate `config.toml` before writing it.
 - Unavailable reasons are one consistent set: `invalid config`, `unreachable`, `auth failed`, `API error`, `bad response` and `timed out`. A malformed service reply shows `bad response: missing '<field>'` instead of a bare field name, and timeouts read `timed out` for every module.
