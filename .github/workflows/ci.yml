@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch: # the release workflow runs CI on its lockfile PR branch
 
 jobs:
   test:
