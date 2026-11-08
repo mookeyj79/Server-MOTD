@@ -1,3 +1,5 @@
-# Templates the role renders onto Linux hosts must keep LF endings, even in a
-# Windows checkout with core.autocrlf (Ansible reads the working tree).
-ansible/roles/server_motd/templates/** text eol=lf
+# LF everywhere, in every checkout. A Windows host with core.autocrlf would
+# otherwise write CRLF into the working tree: Ansible reads the role's
+# templates from there, and line-anchored edits (sed '...$') stop matching.
+# tests/test_repo.py fails if a CRLF line reaches the index.
+* text=auto eol=lf
