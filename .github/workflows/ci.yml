@@ -80,8 +80,12 @@ jobs:
           got=$(sudo /opt/server-motd/venv/bin/python -c "import importlib.metadata as m; print(m.version('server-motd'))")
           echo "pinned $pin, installed $got"
           test "$pin" = "$got"
+      - name: Config passes the released check
+        run: sudo -u server-motd /opt/server-motd/venv/bin/server-motd check
       - name: MOTD renders through the hook
-        run: sudo /etc/update-motd.d/50-server-motd | grep -q "ci-host"
+        # The lockfile installs the figlet extra, so the title is a banner;
+        # match a panel heading instead.
+        run: sudo /etc/update-motd.d/50-server-motd | tee motd.txt | grep -q "Uptime"
 
   debian-hook:
     name: role and hook render
