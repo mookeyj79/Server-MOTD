@@ -8,6 +8,7 @@ fails without one and uses the section as the GitHub Release notes.
 
 - `logins` `warn` / `crit` thresholds now colour the session rows. Before, they were computed but never shown.
 - A service `url` is checked when the config is read: it must be `http://` or `https://` with a host and no query or fragment. `check --no-probe`, and so the Ansible role's validation, now rejects a URL like `sonarr:8989` as invalid config. Before, it passed and the module showed `bad response: unknown url type` at login.
+- `updates` failure reasons name the file and the problem: `<file> not found; is update-notifier-common installed?`, `cannot read <file>: <why>`, `<file> is empty` or `unrecognised contents in <file>`. Before, a missing file showed a raw `[Errno 2] …`, and a file that was not UTF-8 read `bad response`.
 
 ## [0.1.1]
 

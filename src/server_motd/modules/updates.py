@@ -1,8 +1,9 @@
 """System module: pending updates and reboot-required (Debian family).
 
 Reads the files maintained by update-notifier-common: the updates-available
-summary and the reboot-required flag. Without the summary file the module is
-UNAVAILABLE, since the pending count is unknown.
+summary and the reboot-required flag. Without a readable, recognisable
+summary file the module is UNAVAILABLE, since the pending count is unknown;
+the reason names the file and what is wrong with it.
 """
 
 from __future__ import annotations
@@ -30,10 +31,10 @@ class Updates:
         self.reboot_file = Path(spec.take("reboot_file", str, REBOOT_FILE))
 
     def fetch(self, deadline: Deadline) -> Result:
-        text = self.updates_file.read_text(encoding="utf-8")
+        text = self._read_updates_file()
         pending = _count(text, r"(\d+) updates? can be")
         if pending is None:
-            raise ModuleError(f"cannot parse {self.updates_file}")
+            raise ModuleError(f"unrecognised contents in {self.updates_file}")
         security = _count(text, r"(\d+) of these updates are") or 0
         rows = [
             Row(
@@ -53,3 +54,17 @@ class Updates:
             )
         )
         return Result(rows)
+
+    def _read_updates_file(self) -> str:
+        path = self.updates_file
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except FileNotFoundError:
+            raise ModuleError(
+                f"{path} not found; is update-notifier-common installed?"
+            ) from None
+        except OSError as exc:
+            raise ModuleError(f"cannot read {path}: {exc.strerror or exc}") from exc
+        if not text.strip():
+            raise ModuleError(f"{path} is empty")
+        return text
