@@ -12,7 +12,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row, Status
+from server_motd.deadline import Deadline
+from server_motd.model import Result, Row, Status
 from server_motd.modules._http import Http, take_endpoint_and_key
 
 
@@ -41,7 +42,7 @@ class Servarr:
             except Exception:  # the calendar is optional
                 return None
 
-        queue, missing, health, upcoming = s.gather(
+        queue, missing, health, upcoming = deadline.gather(
             lambda: s.get_json("/queue/status"),
             lambda: s.get_json("/wanted/missing", pageSize="1"),
             lambda: s.get_json("/health"),

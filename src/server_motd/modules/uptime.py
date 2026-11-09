@@ -7,7 +7,8 @@ import time
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row
+from server_motd.deadline import Deadline
+from server_motd.model import Result, Row
 
 
 def format_duration(seconds: float) -> str:

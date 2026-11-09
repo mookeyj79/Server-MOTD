@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from server_motd import report
+from server_motd.deadline import Budget
 from server_motd.failure import FailureKind
 from server_motd.model import Status
 from tests.fakescgi import closed_scgi_address
@@ -23,8 +24,15 @@ MakeServer = Callable[..., FakeServer]
 KEY = "k"
 
 
-def only(write_config: WriteConfig, body: str, probe: bool = True) -> report.Outcome:
-    rep = report.collect(write_config('title = "t"\n' + body), probe=probe)
+def only(
+    write_config: WriteConfig,
+    body: str,
+    probe: bool = True,
+    budget: Budget | None = None,
+) -> report.Outcome:
+    rep = report.collect(
+        write_config('title = "t"\n' + body), probe=probe, budget=budget
+    )
     assert len(rep.outcomes) == 1
     return rep.outcomes[0]
 
@@ -181,11 +189,7 @@ def test_bad_title_type_is_a_file_level_error(write_config: WriteConfig) -> None
         report.collect(write_config('title = 5\n[[modules]]\nkind = "uptime"\n'))
 
 
-def test_silent_scgi_is_timed_out(
-    write_config: WriteConfig, silent_scgi: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    from server_motd import runner
-
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.3)
-    o = only(write_config, f'[[modules]]\nkind = "rtorrent"\nscgi = "{silent_scgi}"\n')
+def test_silent_scgi_is_timed_out(write_config: WriteConfig, silent_scgi: str) -> None:
+    body = f'[[modules]]\nkind = "rtorrent"\nscgi = "{silent_scgi}"\n'
+    o = only(write_config, body, budget=Budget(per_module=0.3))
     assert o.failure is not None and o.failure.kind is FailureKind.TIMED_OUT

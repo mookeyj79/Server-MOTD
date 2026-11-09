@@ -1,15 +1,17 @@
-"""Core schema: Status, Row, Result, Thresholds, Deadline and the Module protocol.
+"""Core schema: Status, Row, Result, Thresholds and the Module protocol.
 
 The schema carries no layout. The renderer maps Status to colour.
 """
 
 from __future__ import annotations
 
-import time
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from server_motd.deadline import Deadline
 
 
 class Status(Enum):
@@ -74,20 +76,6 @@ class Thresholds:
         if self.warn is not None and value >= self.warn:
             return Status.WARN
         return under
-
-
-@dataclass(frozen=True)
-class Deadline:
-    """A point in `time.monotonic()` time by which a module must finish."""
-
-    at: float
-
-    @classmethod
-    def after(cls, seconds: float) -> Deadline:
-        return cls(time.monotonic() + seconds)
-
-    def remaining(self) -> float:
-        return max(0.0, self.at - time.monotonic())
 
 
 class Module(Protocol):

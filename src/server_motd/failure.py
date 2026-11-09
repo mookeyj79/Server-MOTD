@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 from server_motd.config import ConfigError
-from server_motd.model import Deadline
 
 
 class FailureKind(Enum):
@@ -66,14 +65,6 @@ class BadResponse(ModuleError):
 
 class TimedOut(ModuleError):
     kind = FailureKind.TIMED_OUT
-
-
-def time_left(deadline: Deadline) -> float:
-    """Seconds left before `deadline`; raise TimedOut if none."""
-    left = deadline.remaining()
-    if left <= 0:
-        raise TimedOut()
-    return left
 
 
 def classify(exc: BaseException) -> Failure:

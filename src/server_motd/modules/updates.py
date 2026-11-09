@@ -11,8 +11,9 @@ import re
 from pathlib import Path
 
 from server_motd.config import ModuleSpec
+from server_motd.deadline import Deadline
 from server_motd.failure import ModuleError
-from server_motd.model import Deadline, Result, Row, Status
+from server_motd.model import Result, Row, Status
 
 UPDATES_FILE = "/var/lib/update-notifier/updates-available"
 REBOOT_FILE = "/var/run/reboot-required"

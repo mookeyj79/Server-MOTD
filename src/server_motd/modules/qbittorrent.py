@@ -12,8 +12,9 @@ from __future__ import annotations
 from collections import Counter
 
 from server_motd.config import ModuleSpec
+from server_motd.deadline import Deadline
 from server_motd.failure import AuthFailed
-from server_motd.model import Deadline, Result, Row, Status
+from server_motd.model import Result, Row, Status
 from server_motd.modules._common import human_bytes
 from server_motd.modules._http import Http, take_endpoint
 

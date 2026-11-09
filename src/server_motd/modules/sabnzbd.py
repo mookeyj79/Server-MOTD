@@ -11,8 +11,9 @@ from __future__ import annotations
 from typing import Any
 
 from server_motd.config import ModuleSpec
+from server_motd.deadline import Deadline
 from server_motd.failure import ApiError, BadResponse
-from server_motd.model import Deadline, Result, Row
+from server_motd.model import Result, Row
 from server_motd.modules._common import human_bytes
 from server_motd.modules._http import Http, take_endpoint_and_key
 
@@ -32,7 +33,7 @@ class Sabnzbd:
 
     def fetch(self, deadline: Deadline) -> Result:
         s = self.http.session(deadline)
-        queue, stats = s.gather(
+        queue, stats = deadline.gather(
             lambda: s.get_json(mode="queue"),
             lambda: s.get_json(mode="server_stats"),
         )

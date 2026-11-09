@@ -7,6 +7,7 @@ Instance is built, so `check --no-probe` catches a bad one and a request
 never sees an unparsed URL. Each `fetch` opens a
 `session(deadline)`: requests share a cookie jar and take their socket
 timeout from the time left, so a module never picks its own timeout.
+Concurrent requests go through `deadline.gather`.
 Transport failures raise the `failure` kinds (unreachable, auth failed, API
 error, bad response, timed out).
 """
@@ -16,7 +17,6 @@ from __future__ import annotations
 import http.client
 import http.cookiejar
 import json
-import threading
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -24,15 +24,14 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from server_motd.config import ConfigError, ModuleSpec
+from server_motd.deadline import Deadline
 from server_motd.failure import (
     ApiError,
     AuthFailed,
     BadResponse,
     TimedOut,
     Unreachable,
-    time_left,
 )
-from server_motd.model import Deadline
 
 
 def take_endpoint(spec: ModuleSpec, api_prefix: str) -> str:
@@ -115,35 +114,6 @@ class Session:
         data = urllib.parse.urlencode(form).encode()
         return self._open(path, {}, data).decode("utf-8", "replace")
 
-    def gather(self, *calls: Callable[[], Any]) -> list[Any]:
-        """Run calls concurrently; results in order, or the first call's error.
-
-        Worker threads are daemons, so an overrun never delays process exit.
-        """
-        results: list[Any] = [None] * len(calls)
-        errors: list[BaseException | None] = [None] * len(calls)
-
-        def work(i: int) -> None:
-            try:
-                results[i] = calls[i]()
-            except BaseException as exc:
-                errors[i] = exc
-
-        threads = [
-            threading.Thread(target=work, args=(i,), daemon=True)
-            for i in range(len(calls))
-        ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(self.deadline.remaining())
-            if t.is_alive():
-                raise TimedOut()
-        for err in errors:
-            if err is not None:
-                raise err
-        return results
-
     def _open(self, path: str, params: Mapping[str, str], data: bytes | None) -> bytes:
         query = {**self._http.params, **params}
         url = self._http.base + path
@@ -151,7 +121,7 @@ class Session:
             url += "?" + urllib.parse.urlencode(query)
         req = urllib.request.Request(url, data=data, headers=self._http.headers)
         try:
-            with self._opener.open(req, timeout=time_left(self.deadline)) as resp:
+            with self._opener.open(req, timeout=self.deadline.left()) as resp:
                 body: bytes = resp.read()
                 return body
         except urllib.error.HTTPError as exc:

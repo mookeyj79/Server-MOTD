@@ -5,7 +5,8 @@ from __future__ import annotations
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row, Status
+from server_motd.deadline import Deadline
+from server_motd.model import Result, Row, Status
 from server_motd.modules._common import human_bytes
 
 
