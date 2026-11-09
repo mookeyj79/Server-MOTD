@@ -7,6 +7,7 @@ fails without one and uses the section as the GitHub Release notes.
 ## [Unreleased]
 
 - `logins` `warn` / `crit` thresholds now colour the session rows. Before, they were computed but never shown.
+- A service `url` is checked when the config is read: it must be `http://` or `https://` with a host and no query or fragment. `check --no-probe`, and so the Ansible role's validation, now rejects a URL like `sonarr:8989` as invalid config. Before, it passed and the module showed `bad response: unknown url type` at login.
 
 ## [0.1.1]
 

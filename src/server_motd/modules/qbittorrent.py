@@ -15,7 +15,7 @@ from server_motd.config import ModuleSpec
 from server_motd.failure import AuthFailed
 from server_motd.model import Deadline, Result, Row, Status
 from server_motd.modules._common import human_bytes
-from server_motd.modules._http import Http
+from server_motd.modules._http import Http, take_endpoint
 
 # State names differ between 4.x (paused*) and 5.x (stopped*).
 _BUCKETS = {
@@ -31,7 +31,7 @@ _BUCKETS = {
 
 class QBittorrent:
     def __init__(self, spec: ModuleSpec) -> None:
-        self.http = Http(spec.take_url() + "/api/v2", auth_hint="login failed")
+        self.http = Http(take_endpoint(spec, "/api/v2"), auth_hint="login failed")
         self.username: str = spec.take("username", str, "")
         self.password: str = spec.take_secret("password") or ""
 

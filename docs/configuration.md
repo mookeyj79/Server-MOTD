@@ -40,6 +40,8 @@ A key a module does not support is an error for that module only (shown as `UNAV
 
 Secrets (`api_key`, `password`) accept `${ENV_VAR}` or a `*_file` variant; see [secrets](secrets.md). Each module makes a few cheap requests with short timeouts.
 
+`url` is the service's base address: `http://` or `https://`, a host, and optionally a port and a path prefix for a reverse proxy (`https://example.com/sonarr`). Leave out the API path; the module adds it. A url without a scheme, or with a query or fragment, is invalid config, which `check --no-probe` reports.
+
 | Kind | Options | Shows |
 | --- | --- | --- |
 | `tautulli` | `url`, `api_key` (required) | Plex status, stream counts by decision, bandwidth |

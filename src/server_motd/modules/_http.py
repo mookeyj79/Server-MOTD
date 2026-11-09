@@ -1,7 +1,10 @@
 """HTTP client for the service modules.
 
 An `Http` is configured once per Instance (base URL, auth header or query
-parameter, how to unwrap the service's reply envelope). Each `fetch` opens a
+parameter, how to unwrap the service's reply envelope). The base URL comes
+from `take_endpoint`, which owns the `url` option: it is checked when the
+Instance is built, so `check --no-probe` catches a bad one and a request
+never sees an unparsed URL. Each `fetch` opens a
 `session(deadline)`: requests share a cookie jar and take their socket
 timeout from the time left, so a module never picks its own timeout.
 Transport failures raise the `failure` kinds (unreachable, auth failed, API
@@ -32,13 +35,37 @@ from server_motd.failure import (
 from server_motd.model import Deadline
 
 
-def take_url_and_key(spec: ModuleSpec) -> tuple[str, str]:
-    """Take the required `url` (trailing slash stripped) and `api_key` options."""
-    url = spec.take_url()
+def take_endpoint(spec: ModuleSpec, api_prefix: str) -> str:
+    """Take the required `url` option and return it joined with `api_prefix`.
+
+    The url must be http(s) with a host and no query or fragment; a trailing
+    slash is ignored. Raises ConfigError otherwise. The url itself is never
+    echoed in the error, since it may carry credentials.
+    """
+    url: str | None = spec.take("url", str)
+    if not url:
+        raise ConfigError("'url' is required")
+    try:
+        parts = urllib.parse.urlsplit(url)
+        parts.port  # noqa: B018 - raises ValueError for a bad port
+    except ValueError as exc:
+        raise ConfigError(f"'url' is not a valid URL ({exc})") from exc
+    if parts.scheme not in ("http", "https"):
+        raise ConfigError("'url' must start with http:// or https://")
+    if not parts.hostname:
+        raise ConfigError("'url' has no host")
+    if parts.query or parts.fragment:
+        raise ConfigError("'url' must not have a query or fragment")
+    return url.rstrip("/") + api_prefix
+
+
+def take_endpoint_and_key(spec: ModuleSpec, api_prefix: str) -> tuple[str, str]:
+    """`take_endpoint` plus the required `api_key` secret."""
+    base = take_endpoint(spec, api_prefix)
     key = spec.take_secret("api_key")
     if not key:
         raise ConfigError("'api_key' is required")
-    return url, key
+    return base, key
 
 
 class Http:
@@ -141,5 +168,3 @@ class Session:
             raise BadResponse(str(exc) or type(exc).__name__) from exc
         except OSError as exc:
             raise Unreachable(str(exc)) from exc
-        except ValueError as exc:  # e.g. unknown URL scheme
-            raise ConfigError(f"'url': {exc}") from exc

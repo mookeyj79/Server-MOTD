@@ -67,13 +67,6 @@ class ModuleSpec:
             raise ConfigError("'warn' must not exceed 'crit'")
         return Thresholds(warn, crit)
 
-    def take_url(self) -> str:
-        """Take the required `url` option, trailing slash stripped."""
-        url = self.take("url", str)
-        if not url:
-            raise ConfigError("'url' is required")
-        return str(url).rstrip("/")
-
     def done(self) -> None:
         if self.options:
             keys = ", ".join(sorted(self.options))

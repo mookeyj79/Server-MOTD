@@ -13,7 +13,7 @@ from typing import Any
 
 from server_motd.config import ModuleSpec
 from server_motd.model import Deadline, Result, Row, Status
-from server_motd.modules._http import Http, take_url_and_key
+from server_motd.modules._http import Http, take_endpoint_and_key
 
 
 class Servarr:
@@ -21,8 +21,8 @@ class Servarr:
     calendar_params: dict[str, str] = {}
 
     def __init__(self, spec: ModuleSpec) -> None:
-        url, key = take_url_and_key(spec)
-        self.http = Http(url + self.api_prefix, headers={"X-Api-Key": key})
+        base, key = take_endpoint_and_key(spec, self.api_prefix)
+        self.http = Http(base, headers={"X-Api-Key": key})
         self.thresholds = spec.take_thresholds()
         self.days: int = spec.take("calendar_days", int, 7)
 
