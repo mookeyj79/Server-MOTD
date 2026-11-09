@@ -5,6 +5,20 @@
     state: present
     cache_valid_time: 3600
 
+- name: Read the distribution
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts.distribution is not defined
+
+# Ubuntu only: Debian no longer packages it. It writes the pending-updates
+# summary the updates module reads. Left installed on state: absent (Ubuntu
+# ships it by default and its own MOTD fragments use it).
+- name: Install update-notifier-common for the updates module
+  ansible.builtin.apt:
+    name: update-notifier-common
+    state: present
+  when: ansible_facts.distribution == 'Ubuntu'
+
 - name: Create the service group
   ansible.builtin.group:
     name: "{{ server_motd_user }}"
