@@ -53,7 +53,7 @@ class Report:
 
 def unavailable(title: str, failure: Failure) -> Result:
     row = Row("Status", f"UNAVAILABLE: {failure.reason}", Status.UNAVAILABLE)
-    return Result([row], Status.UNAVAILABLE, title)
+    return Result([row], title)
 
 
 def collect(path: Path | None, *, probe: bool = True) -> Report:

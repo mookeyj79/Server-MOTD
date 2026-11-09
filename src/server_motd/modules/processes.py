@@ -15,4 +15,4 @@ class Processes:
     def fetch(self, deadline: Deadline) -> Result:
         count = len(psutil.pids())
         status = self.limits.status(count)
-        return Result([Row("Processes", str(count), status)], status)
+        return Result([Row("Processes", str(count), status)])

@@ -3,9 +3,9 @@
 1. Create one file, `modules/<kind>.py`, defining a class with
    `__init__(self, spec: ModuleSpec)` (read options with `spec.take*`; raise
    `ConfigError` for bad config; the pipeline rejects leftover options) and
-   `fetch(self, deadline: Deadline) -> Result` (rows and status only; raise on
-   failure, a `failure.ModuleError` subclass when the kind is known). HTTP
-   services use `_http.Http`, which applies the deadline.
+   `fetch(self, deadline: Deadline) -> Result` (rows only, each with its own
+   status; raise on failure, a `failure.ModuleError` subclass when the kind is
+   known). HTTP services use `_http.Http`, which applies the deadline.
 2. Add ONE import and ONE line to `REGISTRY` below:
    `"<kind>": Kind(<kind>.Class, "<Display title>"),`.
    Keep entries alphabetical so parallel tickets merge cleanly.

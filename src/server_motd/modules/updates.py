@@ -12,7 +12,7 @@ from pathlib import Path
 
 from server_motd.config import ModuleSpec
 from server_motd.failure import ModuleError
-from server_motd.model import Deadline, Result, Row, Status, worst
+from server_motd.model import Deadline, Result, Row, Status
 
 UPDATES_FILE = "/var/lib/update-notifier/updates-available"
 REBOOT_FILE = "/var/run/reboot-required"
@@ -51,4 +51,4 @@ class Updates:
                 Status.WARN if reboot else Status.OK,
             )
         )
-        return Result(rows, worst(rows))
+        return Result(rows)

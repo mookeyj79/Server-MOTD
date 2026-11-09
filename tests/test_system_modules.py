@@ -143,6 +143,24 @@ def test_logins_golden_and_empty(
     assert "none" in r.out
 
 
+def test_logins_thresholds_colour_the_session_rows(
+    run_cli: RunCli, write_config: WriteConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    users = [
+        User("alice", "pts/0", "", 0.0, 1),
+        User("bob", "pts/1", "", 0.0, 2),
+        User("carol", "pts/2", "", 0.0, 3),
+    ]
+    monkeypatch.setattr(psutil, "users", lambda: users)
+    cfg = write_config(HEAD + '[[modules]]\nkind = "logins"\nwarn = 3\ncrit = 5\n')
+    c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
+    assert c.out.count("\x1b[33m") == 3  # every session row is warn
+    monkeypatch.setattr(psutil, "users", lambda: [])
+    cfg = write_config(HEAD + '[[modules]]\nkind = "logins"\nwarn = 1\n')
+    c = run_cli("--config", str(cfg), "--width", "50", "--color", "always")
+    assert "\x1b[32mnone" in c.out  # under the limit: ok
+
+
 def test_processes_golden_and_thresholds(
     run_cli: RunCli,
     write_config: WriteConfig,

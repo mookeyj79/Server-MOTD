@@ -55,7 +55,7 @@ class Tautulli:
         )
         connected = status.get("connected")
         if connected is False:
-            return Result([Row("Plex", "down", Status.CRIT)], Status.CRIT)
+            return Result([Row("Plex", "down", Status.CRIT)])
         rows = [Row("Plex", "up", Status.OK)] if connected else []
         if "stream_count_transcode" not in data:
             raise BadResponse("empty get_activity reply")
@@ -67,4 +67,4 @@ class Tautulli:
         )
         rows.append(Row("Streams", f"{total} ({detail})" if detail else str(total)))
         rows.append(Row("Bandwidth", format_kbps(bandwidth)))
-        return Result(rows, Status.OK if connected else Status.INFO)
+        return Result(rows)

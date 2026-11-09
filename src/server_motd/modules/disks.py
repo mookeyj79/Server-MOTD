@@ -5,7 +5,7 @@ from __future__ import annotations
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row, worst
+from server_motd.model import Deadline, Result, Row
 from server_motd.modules._common import human_bytes
 
 
@@ -27,4 +27,4 @@ class Disks:
             rows.append(Row(part.mountpoint, value, self.limits.status(usage.percent)))
         if not rows:
             raise RuntimeError("no mounted filesystems found")
-        return Result(rows, worst(rows))
+        return Result(rows)

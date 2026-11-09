@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row, Status, worst
+from server_motd.model import Deadline, Result, Row, Status
 from server_motd.modules._http import Http, take_url_and_key
 
 
@@ -54,7 +54,7 @@ class Servarr:
         ]
         if isinstance(upcoming, list):
             rows.append(Row("Upcoming", str(len(upcoming))))
-        return Result(rows, worst(rows))
+        return Result(rows)
 
     @staticmethod
     def _queue_row(data: dict[str, Any]) -> Row:

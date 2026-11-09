@@ -13,7 +13,7 @@ from collections import Counter
 
 from server_motd.config import ModuleSpec
 from server_motd.failure import AuthFailed
-from server_motd.model import Deadline, Result, Row, Status, worst
+from server_motd.model import Deadline, Result, Row, Status
 from server_motd.modules._common import human_bytes
 from server_motd.modules._http import Http
 
@@ -57,4 +57,4 @@ class QBittorrent:
         other = sum(n for s, n in counts.items() if s not in known)
         if other:
             rows.append(Row("Other", str(other)))
-        return Result(rows, worst(rows))
+        return Result(rows)

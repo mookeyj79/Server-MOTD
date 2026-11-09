@@ -4,6 +4,10 @@ Hand-written. Versions follow `pyproject.toml` and stay 0.x until the v1 scope
 ships. Each release needs a `## [x.y.z]` heading here; the release workflow
 fails without one and uses the section as the GitHub Release notes.
 
+## [Unreleased]
+
+- `logins` `warn` / `crit` thresholds now colour the session rows. Before, they were computed but never shown.
+
 ## [0.1.1]
 
 - `check` now validates the top-level `title` and `box` settings, so it no longer passes a config whose MOTD would print nothing. New `check --no-probe` validates without contacting anything; the Ansible role uses it to validate `config.toml` before writing it.

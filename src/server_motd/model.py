@@ -43,16 +43,19 @@ class Row:
 
 @dataclass(frozen=True)
 class Result:
-    """What a module returns. The pipeline stamps `title` from the Instance."""
+    """What a module returns. The pipeline stamps `title` from the Instance.
+
+    Status lives on rows only: a module says something is wrong by putting a
+    status on the row that shows it.
+    """
 
     rows: list[Row] = field(default_factory=list)
-    status: Status = Status.INFO
     title: str = ""
 
-
-def worst(rows: Iterable[Row]) -> Status:
-    """Overall status: the most severe row status."""
-    return Status.worst(r.status for r in rows)
+    @property
+    def status(self) -> Status:
+        """Overall status: the most severe row status."""
+        return Status.worst(r.status for r in self.rows)
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,7 @@ class Module(Protocol):
 
     Constructed from a `ModuleSpec` (take options; raise `ConfigError`).
     `fetch` must finish by `deadline` and raises on failure (see `failure`).
+    Status goes on the rows; the Result's overall status is derived.
     """
 
     def fetch(self, deadline: Deadline) -> Result: ...
