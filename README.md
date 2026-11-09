@@ -1,5 +1,9 @@
 # server-motd
 
+[![CI](https://github.com/mookeyj79/Server-MOTD/actions/workflows/ci.yml/badge.svg)](https://github.com/mookeyj79/Server-MOTD/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/server-motd)](https://pypi.org/project/server-motd/)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+
 A login banner that shows a server's identity, system health and the status of the services it runs. Pure Python 3.11+ (`psutil` is the only required dependency), on Debian/Ubuntu and Windows.
 
 <!-- sample-output -->
@@ -33,6 +37,12 @@ Bad or unreachable services never block your login: a failing module shows `UNAV
 - TOML config with `${ENV_VAR}` and `*_file` secrets
 - Built-in ANSI renderer: two-column boxed layout on wide terminals, optional figlet banner (`pip install "server-motd[figlet]"`)
 
+## Requirements
+
+- Python 3.11 or newer (CI covers 3.11 to 3.14)
+- Debian/Ubuntu (login hook via `update-motd.d`) or Windows (PowerShell profile hook)
+- For the Debian install: Ansible (`ansible-core`) on the controller
+
 ## Quick start
 
 ```bash
@@ -41,6 +51,8 @@ pipx install server-motd
 server-motd --config config.toml check   # validate and probe
 server-motd --config config.toml         # render once
 ```
+
+Without `--config`, it reads `/etc/server-motd/config.toml` on Linux, or `%APPDATA%\server-motd\config.toml` then `%ProgramData%\server-motd\config.toml` on Windows. `server-motd check --no-probe` validates the config without contacting any service. Other flags: `--width <cols>`, `--color auto|always|never`, `--verbose`.
 
 Make it run at login:
 
@@ -56,6 +68,24 @@ Make it run at login:
 - [Troubleshooting](docs/troubleshooting.md)
 - [Migrating from v1](docs/migrating-from-v1.md)
 - [Releasing](docs/releasing.md), [glossary](GLOSSARY.md), [decisions](docs/adr/), [research notes](docs/research/)
+
+## Development
+
+```bash
+python -m pip install -e ".[dev]"
+ruff check . && ruff format --check .
+mypy
+pytest
+python -m build
+```
+
+CI ([ci.yml](.github/workflows/ci.yml)) runs these on Linux and Windows across Python 3.11 to 3.14, plus `ansible-lint`, `actionlint`, and end-to-end runs of the Ansible role and MOTD hook. The README sample above is checked against real output by `tests/test_docs.py`; refresh it with `UPDATE_GOLDEN=1 pytest tests/test_docs.py`. Releases are tag-driven and publish to PyPI, see [docs/releasing.md](docs/releasing.md) and [CHANGELOG.md](CHANGELOG.md).
+
+Bugs and ideas go in [GitHub Issues](https://github.com/mookeyj79/Server-MOTD/issues); pull requests should pass CI.
+
+## License
+
+GPL-3.0, see [LICENSE](LICENSE).
 
 ## Credits
 
