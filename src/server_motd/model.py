@@ -1,15 +1,17 @@
-"""Core schema: Status, Row, Result, Thresholds, Deadline and the Module protocol.
+"""Core schema: Status, Row, Result, Thresholds and the Module protocol.
 
 The schema carries no layout. The renderer maps Status to colour.
 """
 
 from __future__ import annotations
 
-import time
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from server_motd.deadline import Deadline
 
 
 class Status(Enum):
@@ -43,16 +45,19 @@ class Row:
 
 @dataclass(frozen=True)
 class Result:
-    """What a module returns. The pipeline stamps `title` from the Instance."""
+    """What a module returns. The pipeline stamps `title` from the Instance.
+
+    Status lives on rows only: a module says something is wrong by putting a
+    status on the row that shows it.
+    """
 
     rows: list[Row] = field(default_factory=list)
-    status: Status = Status.INFO
     title: str = ""
 
-
-def worst(rows: Iterable[Row]) -> Status:
-    """Overall status: the most severe row status."""
-    return Status.worst(r.status for r in rows)
+    @property
+    def status(self) -> Status:
+        """Overall status: the most severe row status."""
+        return Status.worst(r.status for r in self.rows)
 
 
 @dataclass(frozen=True)
@@ -73,25 +78,12 @@ class Thresholds:
         return under
 
 
-@dataclass(frozen=True)
-class Deadline:
-    """A point in `time.monotonic()` time by which a module must finish."""
-
-    at: float
-
-    @classmethod
-    def after(cls, seconds: float) -> Deadline:
-        return cls(time.monotonic() + seconds)
-
-    def remaining(self) -> float:
-        return max(0.0, self.at - time.monotonic())
-
-
 class Module(Protocol):
     """A synchronous unit of MOTD output.
 
     Constructed from a `ModuleSpec` (take options; raise `ConfigError`).
     `fetch` must finish by `deadline` and raises on failure (see `failure`).
+    Status goes on the rows; the Result's overall status is derived.
     """
 
     def fetch(self, deadline: Deadline) -> Result: ...

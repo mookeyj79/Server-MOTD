@@ -10,7 +10,8 @@ import sys
 import psutil
 
 from server_motd.config import ConfigError, ModuleSpec
-from server_motd.model import Deadline, Result, Row
+from server_motd.deadline import Deadline
+from server_motd.model import Result, Row
 
 
 class Load:
@@ -24,4 +25,4 @@ class Load:
         per_core = one / (psutil.cpu_count() or 1)
         status = self.limits.status(per_core)
         value = f"{one:.2f} {five:.2f} {fifteen:.2f}"
-        return Result([Row("Load", value, status)], status)
+        return Result([Row("Load", value, status)])

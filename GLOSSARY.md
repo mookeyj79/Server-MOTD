@@ -29,7 +29,7 @@ The OS-specific hook that makes the MOTD print at login (`update-motd.d` on Debi
 _Avoid_: Installer, shim
 
 **Result**:
-What a module returns: a title, a list of rows and an overall status.
+What a module returns: a title and a list of rows. Its overall status is derived from its rows' statuses, never set on its own.
 _Avoid_: Output, section
 
 **Row**:

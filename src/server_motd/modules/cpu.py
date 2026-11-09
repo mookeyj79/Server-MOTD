@@ -8,7 +8,8 @@ from __future__ import annotations
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row
+from server_motd.deadline import Deadline
+from server_motd.model import Result, Row
 
 SAMPLE_SECONDS = 0.2  # cpu_percent(None) reports a meaningless 0.0 on first call
 
@@ -21,7 +22,4 @@ class Cpu:
         percent = psutil.cpu_percent(interval=SAMPLE_SECONDS)
         cores = psutil.cpu_count() or 1
         status = self.limits.status(percent)
-        return Result(
-            [Row("Usage", f"{percent:.0f}% ({cores} cores)", status)],
-            status,
-        )
+        return Result([Row("Usage", f"{percent:.0f}% ({cores} cores)", status)])

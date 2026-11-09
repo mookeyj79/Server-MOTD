@@ -32,13 +32,15 @@ A key a module does not support is an error for that module only (shown as `UNAV
 | `cpu` | CPU utilisation percent (use this on Windows) | `warn`, `crit` on percent |
 | `memory` | RAM and swap usage | `warn`, `crit` on RAM percent |
 | `disks` | Usage per mounted filesystem | `warn`, `crit` on percent used |
-| `logins` | Logged-in sessions | `warn`, `crit` on the session count |
+| `logins` | Logged-in sessions | `warn`, `crit` on the session count (colours every session row) |
 | `processes` | Process count | `warn`, `crit` on the count |
 | `updates` | Pending updates and reboot-required (Debian family) | `updates_file` (default `/var/lib/update-notifier/updates-available`), `reboot_file` (default `/var/run/reboot-required`) |
 
 ## Service modules
 
 Secrets (`api_key`, `password`) accept `${ENV_VAR}` or a `*_file` variant; see [secrets](secrets.md). Each module makes a few cheap requests with short timeouts.
+
+`url` is the service's base address: `http://` or `https://`, a host, and optionally a port and a path prefix for a reverse proxy (`https://example.com/sonarr`). Leave out the API path; the module adds it. A url without a scheme, or with a query or fragment, is invalid config, which `check --no-probe` reports.
 
 | Kind | Options | Shows |
 | --- | --- | --- |

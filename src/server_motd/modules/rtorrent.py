@@ -13,8 +13,9 @@ import xmlrpc.client
 from typing import Any
 
 from server_motd.config import ConfigError, ModuleSpec
-from server_motd.failure import ApiError, BadResponse, TimedOut, Unreachable, time_left
-from server_motd.model import Deadline, Result, Row
+from server_motd.deadline import Deadline
+from server_motd.failure import ApiError, BadResponse, TimedOut, Unreachable
+from server_motd.model import Result, Row
 from server_motd.modules._common import human_bytes
 
 _CALLS = [
@@ -59,20 +60,18 @@ class ScgiTransport(xmlrpc.client.Transport):
 
     def _exchange(self, msg: bytes) -> bytes:
         if isinstance(self.address, tuple):
-            sock = socket.create_connection(
-                self.address, timeout=time_left(self.deadline)
-            )
+            sock = socket.create_connection(self.address, timeout=self.deadline.left())
         elif sys.platform == "win32":  # rejected at config time; keeps mypy happy
             raise ConfigError("unix sockets are not supported on Windows")
         else:
             sock = socket.socket(socket.AF_UNIX)
-            sock.settimeout(time_left(self.deadline))
+            sock.settimeout(self.deadline.left())
             sock.connect(self.address)
         with sock:
             sock.sendall(msg)
             buf = b""
             while True:
-                sock.settimeout(time_left(self.deadline))
+                sock.settimeout(self.deadline.left())
                 chunk = sock.recv(65536)
                 if not chunk:
                     return buf

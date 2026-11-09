@@ -151,6 +151,20 @@ def test_check_fails_on_unknown_box_style(
     assert "FAIL  settings: unknown box style 'fancy'" in r.out
 
 
+def test_check_no_probe_rejects_a_scheme_less_url(
+    run_cli: RunCli, write_config: WriteConfig
+) -> None:
+    path = write_config(
+        '[[modules]]\nkind = "sonarr"\nurl = "sonarr:8989"\napi_key = "k"\n'
+    )
+    r = run_cli("--config", str(path), "check", "--no-probe")
+    assert r.code == 1
+    assert (
+        "FAIL  Sonarr: invalid config: 'url' must start with http:// or https://"
+        in r.out
+    )
+
+
 def test_check_no_probe_validates_without_fetching(
     run_cli: RunCli, write_config: WriteConfig, monkeypatch: pytest.MonkeyPatch
 ) -> None:

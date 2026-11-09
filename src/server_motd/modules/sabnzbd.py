@@ -11,10 +11,11 @@ from __future__ import annotations
 from typing import Any
 
 from server_motd.config import ModuleSpec
+from server_motd.deadline import Deadline
 from server_motd.failure import ApiError, BadResponse
-from server_motd.model import Deadline, Result, Row
+from server_motd.model import Result, Row
 from server_motd.modules._common import human_bytes
-from server_motd.modules._http import Http, take_url_and_key
+from server_motd.modules._http import Http, take_endpoint_and_key
 
 
 def _unwrap(data: Any) -> dict[str, Any]:
@@ -27,14 +28,12 @@ def _unwrap(data: Any) -> dict[str, Any]:
 
 class Sabnzbd:
     def __init__(self, spec: ModuleSpec) -> None:
-        url, key = take_url_and_key(spec)
-        self.http = Http(
-            url + "/api", params={"output": "json", "apikey": key}, unwrap=_unwrap
-        )
+        base, key = take_endpoint_and_key(spec, "/api")
+        self.http = Http(base, params={"output": "json", "apikey": key}, unwrap=_unwrap)
 
     def fetch(self, deadline: Deadline) -> Result:
         s = self.http.session(deadline)
-        queue, stats = s.gather(
+        queue, stats = deadline.gather(
             lambda: s.get_json(mode="queue"),
             lambda: s.get_json(mode="server_stats"),
         )

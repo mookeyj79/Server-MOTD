@@ -1,4 +1,7 @@
-"""Runner time limits through the CLI seam, against a deliberately slow server."""
+"""Time budgets through the CLI and `report.collect`, against a slow server.
+
+CLI tests patch `deadline.DEFAULT_BUDGET`; collect tests pass `budget=`.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from server_motd import report, runner
+from server_motd import deadline, report
+from server_motd.deadline import Budget
 from server_motd.failure import FailureKind
 from tests.conftest import Run
 from tests.fakeserver import FakeServer
@@ -39,7 +43,7 @@ def test_module_over_its_limit_is_unavailable_promptly(
     fake_server: MakeServer,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.3)
+    monkeypatch.setattr(deadline, "DEFAULT_BUDGET", Budget(per_module=0.3))
     r, elapsed = slow_sabnzbd(fake_server, write_config, run_cli)
     assert "UNAVAILABLE: timed out" in r.out
     assert elapsed < 2.0
@@ -51,39 +55,36 @@ def test_total_limit_applies_when_module_limit_is_larger(
     fake_server: MakeServer,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 10.0)
-    monkeypatch.setattr(runner, "TOTAL_TIMEOUT", 0.3)
+    monkeypatch.setattr(deadline, "DEFAULT_BUDGET", Budget(per_module=10.0, total=0.3))
     r, elapsed = slow_sabnzbd(fake_server, write_config, run_cli)
     assert "UNAVAILABLE: timed out" in r.out
     assert elapsed < 2.0
 
 
 def test_sequential_requests_share_one_budget(
-    write_config: WriteConfig, fake_server: MakeServer, monkeypatch: pytest.MonkeyPatch
+    write_config: WriteConfig, fake_server: MakeServer
 ) -> None:
     # qBittorrent logs in, then fetches: two requests that each fit the module
     # limit alone but not together. The second gets only what is left.
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.6)
     srv = fake_server()
     srv.add("/api/v2/auth/login", text="Ok.", delay=0.4)
     srv.add("/api/v2/sync/maindata", fixture="qbittorrent/maindata_50.json", delay=0.4)
     cfg = write_config(f'[[modules]]\nkind = "qbittorrent"\nurl = "{srv.url}"\n')
     start = time.monotonic()
-    (o,) = report.collect(cfg).outcomes
+    (o,) = report.collect(cfg, budget=Budget(per_module=0.6)).outcomes
     assert time.monotonic() - start < 1.0
     assert o.failure is not None and o.failure.kind is FailureKind.TIMED_OUT
 
 
 def test_overrun_leaves_no_thread_blocking_exit(
-    write_config: WriteConfig, fake_server: MakeServer, monkeypatch: pytest.MonkeyPatch
+    write_config: WriteConfig, fake_server: MakeServer
 ) -> None:
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.3)
     srv = fake_server()
     srv.add("/api", json={"queue": {}, "total": 0}, delay=2.0)
     cfg = write_config(
         f'[[modules]]\nkind = "sabnzbd"\nurl = "{srv.url}"\napi_key = "k"\n'
     )
-    report.collect(cfg)
+    report.collect(cfg, budget=Budget(per_module=0.3))
     blocking = [
         t
         for t in threading.enumerate()

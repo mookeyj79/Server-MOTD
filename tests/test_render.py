@@ -8,9 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from server_motd import runner
+from server_motd import deadline
 from server_motd.config import ConfigError, ModuleSpec
-from server_motd.model import Deadline, Result, Row
+from server_motd.deadline import Budget, Deadline
+from server_motd.model import Result, Row
 from server_motd.modules import REGISTRY, Kind
 from tests.conftest import Run
 
@@ -54,7 +55,7 @@ def test_kinds(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(REGISTRY, "boom", Kind(Boom, "Boom"))
     monkeypatch.setitem(REGISTRY, "slow", Kind(Slow, "Slow"))
     monkeypatch.setitem(REGISTRY, "secret", Kind(Secret, "Secret"))
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.3)
+    monkeypatch.setattr(deadline, "DEFAULT_BUDGET", Budget(per_module=0.3))
 
 
 def test_uptime_golden(

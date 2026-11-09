@@ -5,7 +5,8 @@ from __future__ import annotations
 import psutil
 
 from server_motd.config import ModuleSpec
-from server_motd.model import Deadline, Result, Row
+from server_motd.deadline import Deadline
+from server_motd.model import Result, Row
 
 
 class Processes:
@@ -15,4 +16,4 @@ class Processes:
     def fetch(self, deadline: Deadline) -> Result:
         count = len(psutil.pids())
         status = self.limits.status(count)
-        return Result([Row("Processes", str(count), status)], status)
+        return Result([Row("Processes", str(count), status)])

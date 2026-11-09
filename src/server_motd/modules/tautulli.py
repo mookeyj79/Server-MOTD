@@ -16,9 +16,10 @@ from __future__ import annotations
 from typing import Any
 
 from server_motd.config import ModuleSpec
+from server_motd.deadline import Deadline
 from server_motd.failure import ApiError, BadResponse
-from server_motd.model import Deadline, Result, Row, Status
-from server_motd.modules._http import Http, take_url_and_key
+from server_motd.model import Result, Row, Status
+from server_motd.modules._http import Http, take_endpoint_and_key
 
 _COUNTS = (
     ("stream_count_direct_play", "direct play"),
@@ -44,18 +45,18 @@ def _unwrap(body: Any) -> Any:
 
 class Tautulli:
     def __init__(self, spec: ModuleSpec) -> None:
-        url, key = take_url_and_key(spec)
-        self.http = Http(url + "/api/v2", headers={"X-Api-Key": key}, unwrap=_unwrap)
+        base, key = take_endpoint_and_key(spec, "/api/v2")
+        self.http = Http(base, headers={"X-Api-Key": key}, unwrap=_unwrap)
 
     def fetch(self, deadline: Deadline) -> Result:
         s = self.http.session(deadline)
-        data, status = s.gather(
+        data, status = deadline.gather(
             lambda: s.get_json(cmd="get_activity"),
             lambda: s.get_json(cmd="server_status"),
         )
         connected = status.get("connected")
         if connected is False:
-            return Result([Row("Plex", "down", Status.CRIT)], Status.CRIT)
+            return Result([Row("Plex", "down", Status.CRIT)])
         rows = [Row("Plex", "up", Status.OK)] if connected else []
         if "stream_count_transcode" not in data:
             raise BadResponse("empty get_activity reply")
@@ -67,4 +68,4 @@ class Tautulli:
         )
         rows.append(Row("Streams", f"{total} ({detail})" if detail else str(total)))
         rows.append(Row("Bandwidth", format_kbps(bandwidth)))
-        return Result(rows, Status.OK if connected else Status.INFO)
+        return Result(rows)

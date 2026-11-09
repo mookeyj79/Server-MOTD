@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from server_motd import report
+from server_motd.deadline import Budget
 from server_motd.failure import FailureKind
 from server_motd.model import Status
 from tests.fakescgi import closed_scgi_address
@@ -23,8 +24,15 @@ MakeServer = Callable[..., FakeServer]
 KEY = "k"
 
 
-def only(write_config: WriteConfig, body: str, probe: bool = True) -> report.Outcome:
-    rep = report.collect(write_config('title = "t"\n' + body), probe=probe)
+def only(
+    write_config: WriteConfig,
+    body: str,
+    probe: bool = True,
+    budget: Budget | None = None,
+) -> report.Outcome:
+    rep = report.collect(
+        write_config('title = "t"\n' + body), probe=probe, budget=budget
+    )
     assert len(rep.outcomes) == 1
     return rep.outcomes[0]
 
@@ -135,6 +143,39 @@ def test_no_probe_builds_without_contacting_anything(
     assert srv.requests == []
 
 
+@pytest.mark.parametrize(
+    ("kind", "url", "reason"),
+    [
+        ("sonarr", "example.com", "must start with http:// or https://"),
+        ("qbittorrent", "localhost:8080", "must start with http:// or https://"),
+        ("tautulli", "ftp://host", "must start with http:// or https://"),
+        ("sabnzbd", "http://", "has no host"),
+        ("radarr", "http://[::1", "is not a valid URL"),
+        ("lidarr", "http://host:port", "is not a valid URL"),
+        ("sonarr", "http://host/?a=1", "must not have a query or fragment"),
+    ],
+)
+def test_bad_url_is_invalid_config_without_probing(
+    write_config: WriteConfig, kind: str, url: str, reason: str
+) -> None:
+    o = only(write_config, service(kind, url), probe=False)
+    assert o.failure is not None
+    assert o.failure.kind is FailureKind.INVALID_CONFIG
+    assert reason in o.failure.reason
+
+
+def test_url_with_a_path_prefix_is_kept(
+    write_config: WriteConfig, fake_server: MakeServer
+) -> None:
+    srv = fake_server(auth=("X-Api-Key", KEY))
+    srv.add("/sonarr/api/v3/queue/status", json={"totalCount": 0})
+    srv.add("/sonarr/api/v3/wanted/missing", json={"totalRecords": 0})
+    srv.add("/sonarr/api/v3/health", json=[])
+    srv.add("/sonarr/api/v3/calendar", json=[])
+    o = only(write_config, service("sonarr", srv.url + "/sonarr/"))
+    assert o.failure is None
+
+
 def test_unknown_box_is_a_warning_and_falls_back(write_config: WriteConfig) -> None:
     rep = report.collect(write_config('box = "fancy"\n'))
     assert rep.box == "single"
@@ -148,11 +189,7 @@ def test_bad_title_type_is_a_file_level_error(write_config: WriteConfig) -> None
         report.collect(write_config('title = 5\n[[modules]]\nkind = "uptime"\n'))
 
 
-def test_silent_scgi_is_timed_out(
-    write_config: WriteConfig, silent_scgi: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    from server_motd import runner
-
-    monkeypatch.setattr(runner, "MODULE_TIMEOUT", 0.3)
-    o = only(write_config, f'[[modules]]\nkind = "rtorrent"\nscgi = "{silent_scgi}"\n')
+def test_silent_scgi_is_timed_out(write_config: WriteConfig, silent_scgi: str) -> None:
+    body = f'[[modules]]\nkind = "rtorrent"\nscgi = "{silent_scgi}"\n'
+    o = only(write_config, body, budget=Budget(per_module=0.3))
     assert o.failure is not None and o.failure.kind is FailureKind.TIMED_OUT
