@@ -5,6 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+import pytest
+
+from server_motd import report
 from tests.conftest import Run
 
 RunCli = Callable[..., Run]
@@ -54,15 +57,48 @@ def test_reboot_required_golden(
     assert_golden("updates_reboot.txt", render(run_cli, write_config, tmp_path).out)
 
 
+def reason(write_config: WriteConfig, tmp_path: Path) -> str:
+    cfg = write_config(
+        '[[modules]]\nkind = "updates"\n'
+        f'updates_file = "{(tmp_path / "updates-available").as_posix()}"\n'
+        f'reboot_file = "{(tmp_path / "reboot-required").as_posix()}"\n'
+    )
+    (o,) = report.collect(cfg).outcomes
+    assert o.failure is not None
+    return o.failure.reason
+
+
 def test_missing_files_are_unavailable(
     run_cli: RunCli, write_config: WriteConfig, tmp_path: Path
 ) -> None:
     r = render(run_cli, write_config, tmp_path)
     assert "UNAVAILABLE" in r.out
+    path = tmp_path / "updates-available"  # native separators, as shown
+    assert reason(write_config, tmp_path) == (
+        f"{path} not found; is update-notifier-common installed?"
+    )
 
 
-def test_unparseable_updates_file_is_unavailable(
-    run_cli: RunCli, write_config: WriteConfig, tmp_path: Path
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        (b"garbage\n", "unrecognised contents in {path}"),
+        (b"\xff\xfe not utf-8\n", "unrecognised contents in {path}"),
+        (b"  \n", "{path} is empty"),
+    ],
+)
+def test_bad_updates_file_reason_names_the_file(
+    write_config: WriteConfig, tmp_path: Path, content: bytes, expected: str
 ) -> None:
-    (tmp_path / "updates-available").write_text("garbage\n")
-    assert "UNAVAILABLE" in render(run_cli, write_config, tmp_path).out
+    (tmp_path / "updates-available").write_bytes(content)
+    path = tmp_path / "updates-available"  # native separators, as shown
+    assert reason(write_config, tmp_path) == expected.format(path=path)
+
+
+def test_unreadable_updates_file_reason(
+    write_config: WriteConfig, tmp_path: Path
+) -> None:
+    (tmp_path / "updates-available").mkdir()  # reading a directory fails
+    assert reason(write_config, tmp_path).startswith(
+        f"cannot read {tmp_path / 'updates-available'}: "
+    )
