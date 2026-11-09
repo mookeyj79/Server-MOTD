@@ -119,6 +119,9 @@ jobs:
         run: |
           sudo stat -c '%U %G %a' /etc/server-motd/config.toml | grep -x 'root server-motd 640'
           sudo -u server-motd /opt/server-motd/venv/bin/server-motd check
+      - name: Ubuntu gets update-notifier-common
+        run: |
+          dpkg -s update-notifier-common | grep -qx 'Status: install ok installed'
       - name: MOTD renders through the hook
         run: |
           sudo /etc/update-motd.d/50-server-motd | tee motd.txt

@@ -1,9 +1,9 @@
-"""System module: pending updates and reboot-required (Debian family).
+"""System module: pending updates and reboot-required (Ubuntu).
 
-Reads the files maintained by update-notifier-common: the updates-available
-summary and the reboot-required flag. Without a readable, recognisable
-summary file the module is UNAVAILABLE, since the pending count is unknown;
-the reason names the file and what is wrong with it.
+Reads the files maintained by update-notifier-common (not packaged on
+Debian): the updates-available summary and the reboot-required flag. Without
+a readable, recognisable summary file the module is UNAVAILABLE, since the
+pending count is unknown; the reason names the file and what is wrong with it.
 """
 
 from __future__ import annotations

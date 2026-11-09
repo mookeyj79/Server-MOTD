@@ -6,6 +6,8 @@ fails without one and uses the section as the GitHub Release notes.
 
 ## [Unreleased]
 
+- The Ansible role installs `update-notifier-common` on Ubuntu, so the `updates` module has its data. Debian does not package it; the docs now say the module is for Ubuntu.
+
 ## [0.1.2]
 
 - `logins` `warn` / `crit` thresholds now colour the session rows. Before, they were computed but never shown.

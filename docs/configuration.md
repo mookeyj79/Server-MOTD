@@ -34,7 +34,7 @@ A key a module does not support is an error for that module only (shown as `UNAV
 | `disks` | Usage per mounted filesystem | `warn`, `crit` on percent used |
 | `logins` | Logged-in sessions | `warn`, `crit` on the session count (colours every session row) |
 | `processes` | Process count | `warn`, `crit` on the count |
-| `updates` | Pending updates and reboot-required (Debian family) | `updates_file` (default `/var/lib/update-notifier/updates-available`), `reboot_file` (default `/var/run/reboot-required`) |
+| `updates` | Pending updates and reboot-required (Ubuntu: reads files from `update-notifier-common`) | `updates_file` (default `/var/lib/update-notifier/updates-available`), `reboot_file` (default `/var/run/reboot-required`) |
 
 ## Service modules
 

@@ -44,7 +44,7 @@ kind = "processes"
 warn = 400      # process count
 
 [[modules]]
-kind = "updates"  # Debian family; paths below are the defaults
+kind = "updates"  # Ubuntu (update-notifier-common); paths below are the defaults
 updates_file = "/var/lib/update-notifier/updates-available"
 reboot_file = "/var/run/reboot-required"
 
