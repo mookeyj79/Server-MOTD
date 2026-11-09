@@ -9,7 +9,7 @@ server-motd check --verbose  # adds exception detail on stderr
 server-motd check --no-probe # validate the config only; contacts nothing
 ```
 
-`check` validates the config, probes every module and prints one line each: `ok  <title>` or `FAIL  <title>: <reason>`, plus `FAIL  settings: <reason>` for a bad top-level setting such as an unknown `box`. The reason is the same text the MOTD shows after `UNAVAILABLE:`. Exit status is 0 when everything is fine and non-zero if the config is missing or invalid, or any module fails. `--no-probe` stops after validation, so it is safe to run anywhere (the Ansible role runs it on every config it writes). The normal (login) invocation always exits 0 so it can never block a login.
+`check` validates the config, probes every module and prints one line each: `ok    <title>` or `FAIL  <title>: <reason>`, plus `FAIL  settings: <reason>` for a bad top-level setting such as an unknown `box`. The reason is the same text the MOTD shows after `UNAVAILABLE:`. Exit status is 0 when everything is fine and non-zero if the config is missing or invalid, or any module fails. `--no-probe` stops after validation, so it is safe to run anywhere (the Ansible role runs it on every config it writes). The normal (login) invocation always exits 0 so it can never block a login.
 
 Config is looked for at `/etc/server-motd/config.toml` on Linux, and `%APPDATA%\server-motd\config.toml` then `%ProgramData%\server-motd\config.toml` on Windows. `--config` overrides discovery.
 
@@ -24,7 +24,8 @@ Config is looked for at `/etc/server-motd/config.toml` on Linux, and `%APPDATA%\
 - `UNAVAILABLE: auth failed: ...`: the service rejected the API key (HTTP 401/403) or, for qBittorrent, the username and password.
 - `UNAVAILABLE: API error: ...`: the service answered with an error (an HTTP error status, or an error in its reply).
 - `UNAVAILABLE: bad response: ...`: the reply was not what the module expects, e.g. `missing 'kbpersec'`; usually an unsupported service version.
-- `load is not available on Windows`: use the `cpu` module.
+- `invalid config: load is not available on Windows; use the cpu module`: swap `load` for `cpu`.
+- `UNAVAILABLE: <file> not found; is update-notifier-common installed?` (the `updates` module): the pending-updates summary is written by Ubuntu's `update-notifier-common` package, which the Ansible role installs on Ubuntu. Install it (`sudo apt-get install update-notifier-common`), or point `updates_file` at the right path. Debian does not package it, so leave `updates` out there. The other `updates` reasons are `cannot read <file>: <why>`, `<file> is empty` and `unrecognised contents in <file>`.
 
 ## Verbose output
 
@@ -36,7 +37,7 @@ server-motd --verbose
 
 ## Layout
 
-- Output width follows the terminal; force it with `--width 100`.
+- Output width follows the terminal; force it with `--width 100`. The Debian login hook always renders at 80 columns with colour on (`--width 80 --color always`).
 - `--color never` gives plain text; `--color always` forces colour. The default turns colour on only for a terminal.
 - A figlet banner needs `pip install "server-motd[figlet]"` and is skipped when the art does not fit.
 

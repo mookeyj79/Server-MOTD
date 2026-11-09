@@ -30,9 +30,9 @@ ANSIBLE_ROLES_PATH=ansible/roles ansible-playbook -i myhost, site.yml
 
 `server_motd_config` is a structured dict rendered to `config.toml`: top-level `title` and `box`, plus a `modules` list with the same keys as the [configuration reference](configuration.md). Inline secrets may be vaulted; the file is `root:server-motd 0640` (the service user can read but not rewrite it) and the task does not log it.
 
-The package is installed from a hash-pinned lockfile (`files/requirements.lock`), which is refreshed after each release (see [releasing](releasing.md)). Until a release has filled it, set `server_motd_package_src` to a wheel path.
+The package is installed from a hash-pinned lockfile (`files/requirements.lock`, overridable with `server_motd_lockfile`), which a PR refreshes after each release (see [releasing](releasing.md)). For development and CI, `server_motd_package_src` installs a local wheel instead, without hash checking.
 
-Other variables (`server_motd_user`, `server_motd_base_dir`, `server_motd_config_dir`, `server_motd_hook_dir`, `server_motd_hook_name`, `server_motd_apt_packages`) are documented in `meta/argument_specs.yml`. Running the role twice changes nothing the second time.
+Other variables (`server_motd_user`, `server_motd_base_dir`, `server_motd_venv`, `server_motd_config_dir`, `server_motd_hook_dir`, `server_motd_hook_name`, `server_motd_apt_packages`) are documented in `meta/argument_specs.yml`. Running the role twice changes nothing the second time.
 
 ## Check it
 
@@ -45,4 +45,6 @@ sudo /etc/update-motd.d/50-server-motd
 
 Set `server_motd_state: absent`. This removes the hook, the install directory, the config and the user.
 
-If the venv is missing or broken the hook still exits 0, so a bad install cannot lock you out of SSH.
+The hook renders at 80 columns with colour, runs with an empty environment (so `${ENV_VAR}` secrets are unset; use a file or an inline vaulted value) and gives up after 20 seconds. If the venv is missing or broken it still exits 0, so a bad install cannot lock you out of SSH.
+
+On Ubuntu the role also installs `update-notifier-common`, which writes the pending-updates summary the `updates` module reads, and leaves it installed on `state: absent`. Debian does not package it, so on Debian the `updates` module shows as unavailable unless `updates_file` points at a file in the same format.
