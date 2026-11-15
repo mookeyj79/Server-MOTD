@@ -8,4 +8,4 @@ The removed v1 bash/Python code lives in the local git tag `legacy-v1`; keep tha
 
 - Issue tracker: GitHub Issues via `gh`. See `docs/agents/issue-tracker.md`.
 - Triage labels: `docs/agents/triage-labels.md`.
-- Domain docs (single-context): `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
+- Domain docs (single-context): `GLOSSARY.md` and `docs/adr/`. See `../docs/agents/domain.md`.
