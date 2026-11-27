@@ -150,7 +150,7 @@ jobs:
           git add "$LOCKFILE"
           git commit -m "Update role lockfile for ${GITHUB_REF_NAME}"
           git push origin "$branch"
-          # Explicit --repo: this repo is a fork, and gh would otherwise target the parent.
+          # Explicit --repo: gh would target the parent repo if this were a fork.
           gh pr create --repo "$GITHUB_REPOSITORY" --base master --head "$branch" \
             --title "Update role lockfile for ${GITHUB_REF_NAME}" \
             --body "Automated: refreshes the hash-pinned lockfile used by the Ansible role to install server-motd ${GITHUB_REF_NAME#v} from PyPI."

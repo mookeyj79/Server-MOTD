@@ -32,6 +32,12 @@ locks/*
 /venv/
 .claude/worktrees/
 
+# Claude Code: per-machine settings
+.claude/settings.local.json
+
+# ansible-lint: local collections and roles cache
+/.ansible/
+
 # dev
 /.venv/
 /uv.lock
