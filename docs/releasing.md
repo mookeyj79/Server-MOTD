@@ -33,20 +33,17 @@ Do these in order, before the first tag.
 ## Post-release lockfile PR
 
 The Ansible role installs the package from a hash-pinned lockfile,
-`ansible/roles/server_motd/files/requirements.lock` (a placeholder until the
-first release, which the lockfile PR then fills; the role refuses to install
-from a lockfile without a `server-motd==` pin).
+`ansible/roles/server_motd/files/requirements.lock`. The role refuses to install
+from a lockfile without a `server-motd==` pin.
 After publishing, the `lockfile-pr` job regenerates it with
 `pip-compile --generate-hashes --strip-extras` for
 `server-motd[figlet]==<version>` (the role always installs the figlet banner)
-and opens a PR against `master` in this repository (`--repo` is explicit
-because the repo is a fork). If the file does not exist, the job logs a notice
-and does nothing.
+and opens a PR against `master` in this repository. If the file does not
+exist, the job logs a notice and does nothing.
 
 PyPI's index can take a few minutes to list a new version, so the job retries
-`pip-compile` for up to about 10 minutes, bypassing pip's cache (PyPI's index
-pages are cacheable for 10 minutes, which would otherwise make every retry
-see the same stale page). If it still fails, re-run just that job once the
+`pip-compile` for up to about 10 minutes, bypassing pip's cache. If it still
+fails, re-run just that job once the
 version shows on PyPI: `gh run rerun <run-id> --failed` (publishing is not
 repeated).
 
