@@ -1,12 +1,8 @@
 # Changelog
 
-Hand-written. Versions follow `pyproject.toml` and stay 0.x until the v1 scope
-ships. Each release needs a `## [x.y.z]` heading here; the release workflow
-fails without one and uses the section as the GitHub Release notes.
-
 ## [Unreleased]
 
-- The Ansible role installs `update-notifier-common` on Ubuntu, so the `updates` module has its data. Debian does not package it; the docs now say the module is for Ubuntu.
+- The Ansible role installs `update-notifier-common` on Ubuntu, so the `updates` module has its data. Debian does not package it, so the `updates` module is for Ubuntu.
 
 ## [0.1.2]
 
