@@ -31,7 +31,7 @@ Bad or unreachable services never block your login: a failing module shows `UNAV
 
 ## What it shows
 
-- System modules: `ips`, `uptime`, `load`, `cpu`, `memory`, `disks`, `logins`, `processes`, `updates` (pending updates and reboot-required)
+- System modules: `ips`, `uptime`, `load`, `cpu`, `memory`, `disks`, `logins`, `processes`, `updates` (pending updates and reboot-required, on Ubuntu)
 - Service modules: `tautulli`, `qbittorrent`, `sabnzbd`, `rtorrent`, `sonarr`, `radarr`, `lidarr`
 - Several named instances of any service (for example two Sonarrs)
 - TOML config with `${ENV_VAR}` and `*_file` secrets

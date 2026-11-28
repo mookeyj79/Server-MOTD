@@ -48,7 +48,7 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 
 ## Repo note
 
-This repo is a fork, and GitHub disables Issues on forks by default. Issues were enabled on 2026-10-29; check `gh repo view --json hasIssuesEnabled` if `gh issue create` reports them disabled.
+The repo started as a fork, where GitHub disables Issues by default; they were enabled on 2026-10-29 and the repo is no longer a fork. If `gh issue create` reports them disabled, check `gh repo view --json hasIssuesEnabled`.
 
 ## Recording a resolved wayfinder ticket
 

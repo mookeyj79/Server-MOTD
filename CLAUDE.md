@@ -2,6 +2,8 @@
 
 Plan and decisions: GitHub issue #1 (the wayfinder map) and `docs/adr/`. Before touching an external API, the Debian MOTD, or the Windows profile hook, read the matching note in `docs/research/`.
 
+`CHANGELOG.md` is hand-written: add each change under `## [Unreleased]`. Versions follow `pyproject.toml` and stay 0.x until the v1 scope ships. The release workflow fails without a `## [x.y.z]` section for the tag and uses that section as the GitHub Release notes.
+
 The removed v1 bash/Python code lives in the local git tag `legacy-v1`; keep that tag local (never push it).
 
 ## Agent skills
